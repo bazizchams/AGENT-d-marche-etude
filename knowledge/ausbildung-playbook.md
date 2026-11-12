@@ -47,3 +47,6 @@ Aucune donnée personnelle de client ici (ce fichier est versionné). Dernière 
 - Un client peut envoyer des certificats partiels (un module): vérifier avant d'annoncer un niveau.
 - Les doublons de fichiers sont fréquents: comparer avant de relire.
 - Un diplôme cité dans le CV sans justificatif doit être signalé avant toute candidature.
+- Test réseau d'abord: avant une recherche d'offres, ouvrir (WebFetch) les domaines clés (Bundesagentur, Make it in Germany, ausbildung.de, agrégateurs). Si un hôte renvoie ENOTFOUND, le signaler et demander son autorisation au lieu de continuer sur des résumés de recherche.
+- Statut de preuve: une offre vue seulement dans un résultat de recherche reste « A VERIFIER ». Elle devient « vérifiée » après ouverture de la page (employeur, ville, début, langue, contact lus sur l'annonce). Les agrégateurs ne remplacent pas la page de l'employeur ou de la Bundesagentur; contrôler que l'ID de l'annonce correspond à l'employeur cité.
+- Calendrier et profil: vérifier que la date de début laisse 6 mois ou plus pour visa et légalisations. Distinguer les formations d'aide de 1 an des cours préparatoires de langue de 12 mois. Noter les conditions de diplôme scolaire dans offres.csv.
