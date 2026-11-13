@@ -8,7 +8,7 @@
 - Cinq lettres, même prononciation en français, en anglais et en arabe.
 
 ## Signature
-- Sous le logo : « Agents IA · Par Orion »
+- Sous le logo : « Agents IA · Logiciels · Sites web », sur le modèle de « Digital • Branding • Media » chez Orion
 - Slogan : « Pendant que vous rêvez, *Oniro travaille.* »
 
 ## Logo
