@@ -4,7 +4,59 @@ import { Barre, notifier, tenter } from '../components/ui';
 import { TAILLE_MAX, TYPES_ACCEPTES } from '../lib/fichiers';
 import { echeanceExigible, montant, progression, resteEcheance, resteFrais } from '../lib/regles';
 import { televerserParClient, useBase, useUtilisateur } from '../lib/store';
-import type { Langue, StatutDocument } from '../lib/types';
+import type { Dossier, Evenement, Langue, StatutDocument } from '../lib/types';
+
+/** Libellé affiché selon la langue : arabe si disponible, sinon français. */
+const libelle = (x: { nom: string; nomAr?: string }, ar: boolean) => (ar && x.nomAr) || x.nom;
+
+/** Libellés arabes génériques du journal, quand l'événement n'a pas de version arabe. */
+const JOURNAL_AR: Record<Evenement['type'], string> = {
+  creation: 'تم فتح الملف',
+  document: 'تحديث يخص وثائقكم',
+  paiement: 'تم تسجيل دفعة',
+  etape: 'تم إنجاز مرحلة من ملفكم',
+  note: 'ملاحظة من الوكالة',
+  rdv: 'تم تحديد موعد أو تعديله',
+  statut: 'تم تحديث حالة الملف',
+  message: 'رسالة من الوكالة',
+};
+
+/**
+ * Texte arabe d'un événement du journal visible par le client.
+ * Reconnaît les textes produits par le logiciel pour y mettre le nom arabe du document / de l'étape ;
+ * les motifs de refus restent tels quels. À défaut, libellé générique selon le type.
+ */
+function journalArabe(e: Evenement, d: Dossier): React.ReactNode {
+  if (e.texteAr) return e.texteAr;
+  const t = e.texte;
+  if (e.type === 'etape') {
+    const m = /^Étape terminée : (.+)$/.exec(t);
+    const et = m && d.etapes.find((x) => x.nom === m[1]);
+    if (et) return <>تم إنجاز المرحلة: <bdi>{libelle(et, true)}</bdi></>;
+  }
+  if (e.type === 'document') {
+    const doc = [...d.documents].sort((a, b) => b.nom.length - a.nom.length).find((x) => t.startsWith(`${x.nom} : `));
+    if (doc) {
+      const nom = <bdi>{libelle(doc, true)}</bdi>;
+      const reste = t.slice(doc.nom.length + 3);
+      if (reste.startsWith('reçu à l')) return <>تم استلام الوثيقة: {nom}</>;
+      if (reste.startsWith('envoyé par le client')) return <>تم إرسال الوثيقة: {nom} (قيد المراجعة)</>;
+      if (reste.startsWith('validé')) return <>تم قبول الوثيقة: {nom}</>;
+      if (reste.startsWith('refusé')) {
+        const motif = reste.replace(/^refusé\s*–?\s*/, '');
+        return <>الوثيقة غير مقبولة: {nom}{motif && <> – <bdi>{motif}</bdi></>}</>;
+      }
+    }
+    const m = /^Document demandé en plus : (.+)$/.exec(t);
+    if (m) return <>وثيقة إضافية مطلوبة: <bdi>{m[1]}</bdi></>;
+  }
+  if (e.type === 'paiement') {
+    if (/annulé/.test(t)) return 'تم إلغاء دفعة';
+    const m = /^Encaissement (.+?)(?: –| \(reçu)/.exec(t);
+    if (m) return <>تم تسجيل دفعة بقيمة <bdi>{m[1]}</bdi></>;
+  }
+  return JOURNAL_AR[e.type];
+}
 
 const T = {
   fr: {
@@ -46,7 +98,7 @@ export default function EspaceClient() {
   const manquants = d.documents.filter((x) => x.statut === 'manquant' || x.statut === 'refuse').length;
   const lignes = [
     ...d.echeances.map((e) => ({ id: e.id, lib: e.moment === 'depot' ? (ar ? 'أتعاب – 50٪ عند إيداع الملف' : e.libelle) : (ar ? 'أتعاب – 50٪ عند نهاية الإجراءات' : e.libelle), groupe: 'h', montant: e.montant, reste: resteEcheance(d, e.id), devise: e.devise, exig: echeanceExigible(d, e.moment) })),
-    ...d.frais.map((f) => ({ id: f.id, lib: f.nom, groupe: 'f', montant: f.montant, reste: resteFrais(d, f), devise: f.devise, exig: true })),
+    ...d.frais.map((f) => ({ id: f.id, lib: libelle(f, ar), groupe: 'f', montant: f.montant, reste: resteFrais(d, f), devise: f.devise, exig: true })),
   ];
   const resteTotal = lignes.filter((l) => l.exig && l.reste > 0);
 
@@ -83,7 +135,7 @@ export default function EspaceClient() {
         <section className="carte">
           <h2>{t.avancement}</h2>
           <Barre pourcent={p.pourcent} />
-          <p style={{ marginBottom: 0 }}>{p.courante ? <>{t.etapeCours} : <b>{p.courante.nom}</b></> : <b>{t.toutFait}</b>} <span className="muted">({p.faites}/{p.total})</span></p>
+          <p style={{ marginBottom: 0 }}>{p.courante ? <>{t.etapeCours} : <b>{libelle(p.courante, ar)}</b></> : <b>{t.toutFait}</b>} <span className="muted">({p.faites}/{p.total})</span></p>
           {d.rdv && <div className="alerte alerte-bleu" style={{ marginTop: 12, marginBottom: 0 }}>📅 {t.rdv} : <b>{new Date(d.rdv.date).toLocaleString(loc, { dateStyle: 'full', timeStyle: 'short' })}</b> – {d.rdv.lieu}</div>}
         </section>
 
@@ -94,7 +146,7 @@ export default function EspaceClient() {
             {d.documents.map((doc) => (
               <li key={doc.id}>
                 <div>
-                  <b>{doc.nom}</b>
+                  <b>{libelle(doc, ar)}</b>
                   {doc.statut === 'refuse' && <div className="petit" style={{ color: 'var(--rouge)' }}>{t.motif} : {doc.motifRefus}</div>}
                 </div>
                 <div className="actions">
@@ -135,7 +187,7 @@ export default function EspaceClient() {
           <h2>{t.historique}</h2>
           <ul className="journal">
             {[...d.journal].filter((e) => !e.interne).reverse().slice(0, 15).map((e) => (
-              <li key={e.id}><div style={{ flex: 1 }}><div>{e.texte}</div><div className="petit muted">{new Date(e.date).toLocaleDateString(loc)}</div></div></li>
+              <li key={e.id}><div style={{ flex: 1 }}><div>{ar ? journalArabe(e, d) : e.texte}</div><div className="petit muted">{new Date(e.date).toLocaleDateString(loc)}</div></div></li>
             ))}
           </ul>
         </section>

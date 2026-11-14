@@ -56,7 +56,7 @@ describe('paiements', () => {
     const d = creerDossier(campus, client, 'u', 'X');
     const s = soldes(d);
     expect(s.EUR!.du).toBe(50);
-    expect(s.DZD!.du).toBe(120000 + 37000 + 17000 + 6000);
+    expect(s.DZD!.du).toBe(campus.honoraires + campus.frais.filter((f) => f.devise === 'DZD').reduce((t, f) => t + f.montant, 0));
   });
 });
 

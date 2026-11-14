@@ -67,8 +67,8 @@ export function donneesDemo(): Base {
   d1.frais[0].verse = true;
   valider(d1, 8, -50);
   d1.documents[0].expiration = jourCourt(20); // passeport qui expire bientôt
-  etapes(d1, 6, -50);
-  d1.rdv = { date: jour(9).slice(0, 16), lieu: 'TLScontact Alger' };
+  etapes(d1, 7, -50); // jusqu'au contrat d'Ausbildung signé
+  d1.rdv = { date: jour(9).slice(0, 16), lieu: "Ambassade d'Allemagne / VFS Global Alger" };
 
   // 2. Amina – Campus France, un document envoyé par le client à vérifier, un refusé
   const d2 = ouvrir(clients[1], 'm-campus', 'u-agent2', -45);
@@ -98,8 +98,8 @@ export function donneesDemo(): Base {
   d5.ouvertLe = jour(-400);
   payer(d5, { type: 'echeance', id: d5.echeances[0].id }, d5.echeances[0].montant, -400);
   d5.frais.forEach((f) => { payer(d5, { type: 'frais', id: f.id }, f.montant, -380); f.verse = true; });
-  valider(d5, 10, -380);
-  etapes(d5, 9, -380);
+  valider(d5, d5.documents.length, -380);
+  etapes(d5, d5.etapes.length, -380);
 
   return {
     version: 1,
