@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Icone } from '../components/Icone';
+import { EntreePage, StaggerGrille, StaggerListe } from '../components/Motion';
 import { Barre, BadgeDossier, Modale, Vide, notifier, tenter } from '../components/ui';
 import { date, formatSoldes, nomClient, progression, soldes } from '../lib/regles';
 import { inviterClient, majClient, ouvrirDossier, useBase, useUtilisateur } from '../lib/store';
 import type { Client, Langue } from '../lib/types';
+import { initiales } from './Clients';
 
 export default function FicheClient() {
   const { id } = useParams();
@@ -13,68 +15,165 @@ export default function FicheClient() {
   const [edition, setEdition] = useState(false);
   const [nouveauDossier, setNouveauDossier] = useState(false);
   const c = base.clients.find((x) => x.id === id);
-  if (!c) return <Vide icone="clients" action={<Link className="btn btn-petit" to="/clients">Retour à la liste des clients</Link>}>Ce client n'existe pas ou a été supprimé.</Vide>;
+
+  if (!c) {
+    return (
+      <Vide icone="clients" action={<Link className="btn btn-petit" to="/clients">Retour à la liste des clients</Link>}>
+        Ce client n'existe pas ou a été supprimé.
+      </Vide>
+    );
+  }
+
   const dossiers = base.dossiers.filter((d) => d.clientId === c.id).sort((a, b) => b.ouvertLe.localeCompare(a.ouvertLe));
 
   return (
-    <>
-      <div className="entete">
-        <div>
-          <Link className="fil" to="/clients"><Icone nom="retour" taille={16} /> Clients</Link>
-          <h1>{nomClient(c)}</h1>
-          <div className="muted">Client depuis le {date(c.creeLe)}</div>
-        </div>
-        <div className="actions">
-          <button type="button" onClick={() => setEdition(true)}><Icone nom="crayon" taille={16} /> Modifier le client</button>
-          <button type="button" className="btn-primaire" onClick={() => setNouveauDossier(true)}><Icone nom="plus" taille={16} /> Nouveau dossier</button>
+    <EntreePage>
+      <div className="entete-hero">
+        <div className="entete" style={{ marginBottom: 0 }}>
+          <div>
+            <Link className="fil" to="/clients"><Icone nom="retour" taille={16} /> Clients</Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--esp-3)', marginTop: 4 }}>
+              <span className="avatar avatar-lg" aria-hidden="true">{initiales(c.prenom, c.nom)}</span>
+              <div>
+                <h1>{nomClient(c)}</h1>
+                <div className="actions" style={{ gap: 8, marginTop: 4 }}>
+                  <span className="pilule-date">
+                    <Icone nom="calendrier" taille={13} /> Client depuis le {date(c.creeLe)}
+                  </span>
+                  <span className="badge b-gris" lang={c.langue}>
+                    <Icone nom="globe" taille={12} /> {c.langue === 'ar' ? 'العربية' : 'Français'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="actions">
+            <button type="button" onClick={() => setEdition(true)}>
+              <Icone nom="crayon" taille={16} /> Modifier le client
+            </button>
+            <button type="button" className="btn-primaire" onClick={() => setNouveauDossier(true)}>
+              <Icone nom="plus" taille={16} /> Nouveau dossier
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grille g-1-2">
+      <StaggerGrille className="grille g-1-2">
         <section className="carte">
-          <h2>Coordonnées</h2>
-          <ul className="liste-simple">
-            <li><span className="muted">Téléphone</span><a href={`tel:+${c.telephone}`}>+{c.telephone}</a></li>
-            <li><span className="muted">E-mail</span><span>{c.email || '—'}</span></li>
-            <li><span className="muted">Naissance</span><span>{date(c.dateNaissance) || '—'}</span></li>
-            <li><span className="muted">Adresse</span><span>{c.adresse || '—'}</span></li>
-            <li><span className="muted">Langue</span><span lang={c.langue}>{c.langue === 'ar' ? 'العربية (arabe)' : 'Français'}</span></li>
-            {c.contactSuivi && <li><span className="muted">Suivi par</span><span>{c.contactSuivi.nom}<br /><span className="petit">+{c.contactSuivi.telephone}</span></span></li>}
+          <h2 className="titre-section"><Icone nom="utilisateur" /> Coordonnées</h2>
+          <ul className="liste-infos">
+            <li>
+              <Icone nom="telephone" taille={16} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="petit muted">Téléphone</div>
+                <a href={`tel:+${c.telephone}`} dir="ltr">+{c.telephone}</a>
+              </div>
+            </li>
+            <li>
+              <Icone nom="courriel" taille={16} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="petit muted">E-mail</div>
+                <span style={{ overflowWrap: 'anywhere' }}>{c.email || '—'}</span>
+              </div>
+            </li>
+            <li>
+              <Icone nom="calendrier" taille={16} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="petit muted">Naissance</div>
+                <span>{date(c.dateNaissance) || '—'}</span>
+              </div>
+            </li>
+            <li>
+              <Icone nom="accueil" taille={16} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="petit muted">Adresse</div>
+                <span>{c.adresse || '—'}</span>
+              </div>
+            </li>
+            <li>
+              <Icone nom="globe" taille={16} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="petit muted">Langue</div>
+                <span lang={c.langue}>{c.langue === 'ar' ? 'العربية (arabe)' : 'Français'}</span>
+              </div>
+            </li>
+            {c.contactSuivi && (
+              <li>
+                <Icone nom="clients" taille={16} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div className="petit muted">Suivi par</div>
+                  <div>{c.contactSuivi.nom}</div>
+                  <div className="petit muted" dir="ltr">+{c.contactSuivi.telephone}</div>
+                </div>
+              </li>
+            )}
           </ul>
-          <Invitations client={c} />
-          {!c.email && <div className="alerte alerte-orange" style={{ marginTop: 12, marginBottom: 0 }}><Icone nom="alerte" /><div>Ajoutez un e-mail pour que le client puisse accéder à son espace en ligne. <button type="button" className="btn-lien" onClick={() => setEdition(true)}>Ajouter l'e-mail</button></div></div>}
+
+          <div className="panneau-invitation">
+            <div style={{ fontWeight: 'var(--graisse-forte)', fontSize: 'var(--taille-s)' }}>Espace client en ligne</div>
+            <div className="petit muted" style={{ marginTop: 2 }}>Envoyez un lien direct pour suivre les documents et étapes.</div>
+            <Invitations client={c} />
+          </div>
+
+          {!c.email && (
+            <div className="alerte alerte-orange" style={{ marginTop: 12, marginBottom: 0 }}>
+              <Icone nom="alerte" />
+              <div>
+                Ajoutez un e-mail pour que le client puisse accéder à son espace en ligne.{' '}
+                <button type="button" className="btn-lien" onClick={() => setEdition(true)}>Ajouter l'e-mail</button>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="carte">
-          <h2>Dossiers ({dossiers.length})</h2>
-          {dossiers.length === 0 ? <Vide icone="dossier" action={<button type="button" className="btn-petit btn-primaire" onClick={() => setNouveauDossier(true)}>Ouvrir un dossier</button>}>Aucun dossier pour ce client.</Vide> : (
-            <ul className="liste-simple">
+          <h2 className="titre-section">
+            <Icone nom="dossier" /> Dossiers ({dossiers.length})
+          </h2>
+          {dossiers.length === 0 ? (
+            <Vide icone="dossier" action={<button type="button" className="btn-petit btn-primaire" onClick={() => setNouveauDossier(true)}>Ouvrir un dossier</button>}>
+              Aucun dossier pour ce client.
+            </Vide>
+          ) : (
+            <StaggerListe as="ul" className="grille" style={{ listStyle: 'none', margin: 0, padding: 0, gap: 'var(--esp-3)' }}>
               {dossiers.map((d) => {
                 const m = base.modeles.find((x) => x.id === d.modeleId);
                 const p = progression(d);
                 return (
-                  <li key={d.id} className="cliquable" onClick={() => nav(`/dossiers/${d.id}`)}>
-                    <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span className="pastille" style={{ background: m?.couleur }} />
-                        <Link to={`/dossiers/${d.id}`}><b>{d.intitule}</b></Link>
-                        <span className="petit muted">{d.numero}</span>
-                        <BadgeDossier statut={d.statut} />
+                  <li
+                    key={d.id}
+                    className="carte-sous cliquable"
+                    style={{ '--accent-modele': m?.couleur ?? 'var(--c-primaire)' } as CSSProperties}
+                    onClick={(e) => { if (!(e.target as HTMLElement).closest('a, button')) nav(`/dossiers/${d.id}`); }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
+                      <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <span className="pastille" style={{ background: m?.couleur }} />
+                          <Link to={`/dossiers/${d.id}`}><b>{d.intitule}</b></Link>
+                          <span className="petit muted">{d.numero}</span>
+                          <BadgeDossier statut={d.statut} />
+                        </div>
                       </div>
-                      <div className="petit muted" style={{ margin: '4px 0' }}>{p.courante?.nom ?? 'Toutes les étapes sont terminées'}</div>
-                      <Barre pourcent={p.pourcent} label={`Avancement ${d.numero}`} />
+                      <div className="num petit">
+                        Reste : <b>{formatSoldes(soldes(d), 'reste')}</b>
+                      </div>
                     </div>
-                    <div className="num petit" style={{ minWidth: 120 }}>Reste : <b>{formatSoldes(soldes(d), 'reste')}</b></div>
+                    <div className="petit muted" style={{ margin: '6px 0' }}>
+                      {p.courante?.nom ?? 'Toutes les étapes sont terminées'} · {p.faites}/{p.total} étapes ({p.pourcent} %)
+                    </div>
+                    <Barre pourcent={p.pourcent} label={`Avancement ${d.numero}`} />
                   </li>
                 );
               })}
-            </ul>
+            </StaggerListe>
           )}
         </section>
-      </div>
+      </StaggerGrille>
+
       {edition && <EditionClient client={c} onFermer={() => setEdition(false)} />}
       {nouveauDossier && <NouveauDossier clientId={c.id} onFermer={() => setNouveauDossier(false)} />}
-    </>
+    </EntreePage>
   );
 }
 
@@ -129,22 +228,36 @@ function EditionClient({ client, onFermer }: { client: Client; onFermer: () => v
     <div className="champ"><label htmlFor={k}>{lib}</label><input id={k} type={type} value={f[k]} onChange={set(k)} /></div>
   );
   return (
-    <Modale titre="Modifier le client" onFermer={onFermer} large>
+    <Modale titre="Modifier le client" sousTitre={nomClient(client)} onFermer={onFermer} large>
       <form onSubmit={enregistrer}>
-        <div className="grille g2" style={{ gap: '0 16px' }}>
-          {ch('prenom', 'Prénom')}{ch('nom', 'Nom')}
-          {ch('telephone', 'Téléphone (WhatsApp)', 'tel')}{ch('email', 'E-mail', 'email')}
-          {ch('dateNaissance', 'Date de naissance', 'date')}
-          <div className="champ"><label htmlFor="langue">Langue</label>
-            <select id="langue" value={f.langue} onChange={set('langue')}><option value="fr">Français</option><option value="ar">العربية (arabe)</option></select>
+        <div className="section-formulaire">
+          <div className="section-formulaire-titre">Coordonnées</div>
+          <div className="grille g2" style={{ gap: '0 16px' }}>
+            {ch('prenom', 'Prénom')}{ch('nom', 'Nom')}
+            {ch('telephone', 'Téléphone (WhatsApp)', 'tel')}{ch('email', 'E-mail', 'email')}
+            {ch('dateNaissance', 'Date de naissance', 'date')}
+            <div className="champ">
+              <label htmlFor="langue">Langue</label>
+              <select id="langue" value={f.langue} onChange={set('langue')}>
+                <option value="fr">Français</option>
+                <option value="ar">العربية (arabe)</option>
+              </select>
+            </div>
+          </div>
+          {ch('adresse', 'Adresse')}
+        </div>
+
+        <div className="section-formulaire" style={{ marginBottom: 0 }}>
+          <h3 className="section-formulaire-titre">Personne qui suit le dossier (parent…)</h3>
+          <div className="grille g3" style={{ gap: '0 16px' }}>
+            {ch('suiviNom', 'Nom et lien')}{ch('suiviTel', 'Téléphone', 'tel')}{ch('suiviEmail', 'E-mail', 'email')}
           </div>
         </div>
-        {ch('adresse', 'Adresse')}
-        <h3>Personne qui suit le dossier (parent…)</h3>
-        <div className="grille g3" style={{ gap: '0 16px' }}>
-          {ch('suiviNom', 'Nom et lien')}{ch('suiviTel', 'Téléphone', 'tel')}{ch('suiviEmail', 'E-mail', 'email')}
+
+        <div className="pied">
+          <button type="button" onClick={onFermer}>Annuler</button>
+          <button type="submit" className="btn-primaire">Enregistrer les modifications</button>
         </div>
-        <div className="pied"><button type="button" onClick={onFermer}>Annuler</button><button type="submit" className="btn-primaire">Enregistrer les modifications</button></div>
       </form>
     </Modale>
   );
@@ -162,15 +275,32 @@ export function NouveauDossier({ clientId, onFermer }: { clientId: string; onFer
   return (
     <Modale titre="Nouveau dossier" onFermer={onFermer}>
       <form onSubmit={(e) => { e.preventDefault(); tenter(() => { const d = ouvrirDossier(clientId, modeleId, agentId, intitule); nav(`/dossiers/${d.id}`); }, 'Dossier ouvert'); }}>
-        <div className="champ"><label htmlFor="m">Type de dossier</label>
-          <select id="m" value={modeleId} onChange={(e) => setModeleId(e.target.value)}>{modeles.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}</select>
+        <div className="champ">
+          <label htmlFor="m">Type de dossier</label>
+          <select id="m" value={modeleId} onChange={(e) => setModeleId(e.target.value)}>
+            {modeles.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
+          </select>
         </div>
-        <div className="champ"><label htmlFor="a">Agent responsable</label>
-          <select id="a" value={agentId} onChange={(e) => setAgentId(e.target.value)}>{base.utilisateurs.filter((u) => u.actif && u.role !== 'client').map((u) => <option key={u.id} value={u.id}>{u.nom}</option>)}</select>
+        <div className="champ">
+          <label htmlFor="a">Agent responsable</label>
+          <select id="a" value={agentId} onChange={(e) => setAgentId(e.target.value)}>
+            {base.utilisateurs.filter((u) => u.actif && u.role !== 'client').map((u) => <option key={u.id} value={u.id}>{u.nom}</option>)}
+          </select>
         </div>
-        <div className="champ"><label htmlFor="i">Précision (facultatif)</label><input id="i" value={intitule} onChange={(e) => setIntitule(e.target.value)} /></div>
-        {m && <div className="alerte alerte-bleu"><Icone nom="info" /><div>Seront créés : {m.documents.length} documents à fournir, {m.etapes.length} étapes, 2 échéances d'honoraires (50 % / 50 %) et {m.frais.length} frais de procédure.</div></div>}
-        <div className="pied"><button type="button" onClick={onFermer}>Annuler</button><button type="submit" className="btn-primaire" disabled={!modeleId}>Ouvrir le dossier</button></div>
+        <div className="champ">
+          <label htmlFor="i">Précision (facultatif)</label>
+          <input id="i" value={intitule} onChange={(e) => setIntitule(e.target.value)} />
+        </div>
+        {m && (
+          <div className="alerte alerte-bleu">
+            <Icone nom="info" />
+            <div>Seront créés : {m.documents.length} documents à fournir, {m.etapes.length} étapes, 2 échéances d'honoraires (50 % / 50 %) et {m.frais.length} frais de procédure.</div>
+          </div>
+        )}
+        <div className="pied">
+          <button type="button" onClick={onFermer}>Annuler</button>
+          <button type="submit" className="btn-primaire" disabled={!modeleId}>Ouvrir le dossier</button>
+        </div>
       </form>
     </Modale>
   );

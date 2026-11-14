@@ -38,6 +38,17 @@ const CHEMINS = {
   paiement: <><rect x="2.5" y="5.5" width="19" height="13" rx="2" /><circle cx="12" cy="12" r="2.5" /><path d="M6 9v.01M18 15v.01" /></>,
   vide: <><circle cx="12" cy="12" r="8.5" strokeDasharray="3 3" /></>,
   horloge: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+  soleil: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></>,
+  lune: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />,
+  moniteur: <><rect x="2.5" y="3.5" width="19" height="13" rx="2" /><path d="M8.5 20.5h7M12 16.5v4" /></>,
+  avion: <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />,
+  globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a13.5 13.5 0 0 1 0 18 13.5 13.5 0 0 1 0-18z" /></>,
+  bouclier: <path d="M12 2.5 4.5 5.5v6c0 5 3.2 8.5 7.5 10 4.3-1.5 7.5-5 7.5-10v-6z" />,
+  utilisateur: <><circle cx="12" cy="8" r="4" /><path d="M4 20c.8-4 4-6 8-6s7.2 2 8 6" /></>,
+  chevronDroite: <path d="m9 6 6 6-6 6" />,
+  filtre: <path d="M3 5h18l-7 8v6l-4-2v-4z" />,
+  telephone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />,
+  passeport: <><rect x="5" y="2.5" width="14" height="19" rx="2" /><circle cx="12" cy="10.5" r="3" /><path d="M9 17h6" /></>,
 } as const;
 
 export type NomIcone = keyof typeof CHEMINS;

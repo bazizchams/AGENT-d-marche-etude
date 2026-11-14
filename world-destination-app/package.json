@@ -12,7 +12,9 @@
     "seed": "node supabase/generer-seed.mjs"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@supabase/supabase-js": "2.118.0",
+    "gsap": "^3.15.1",
     "qrcode": "1.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",

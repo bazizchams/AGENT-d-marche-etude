@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Icone, type NomIcone } from '../components/Icone';
+import { EntreePage, StaggerListe } from '../components/Motion';
 import { Barre, notifier, tenter } from '../components/ui';
 import { TAILLE_MAX, TYPES_ACCEPTES, typeAutorise } from '../lib/fichiers';
 import { echeanceExigible, montant, progression, resteEcheance, resteFrais } from '../lib/regles';
@@ -20,6 +22,17 @@ const JOURNAL_AR: Record<Evenement['type'], string> = {
   rdv: 'تم تحديد موعد أو تعديله',
   statut: 'تم تحديث حالة الملف',
   message: 'رسالة من الوكالة',
+};
+
+const ICONE_JOURNAL: Record<Evenement['type'], NomIcone> = {
+  creation: 'dossier',
+  document: 'fichier',
+  paiement: 'paiement',
+  etape: 'coche',
+  note: 'note',
+  rdv: 'calendrier',
+  statut: 'info',
+  message: 'message',
 };
 
 /**
@@ -61,7 +74,8 @@ function journalArabe(e: Evenement, d: Dossier): React.ReactNode {
 
 const T = {
   fr: {
-    bonjour: 'Bonjour', dossier: 'Votre dossier', avancement: 'Avancement', etapeCours: 'Étape en cours', toutFait: 'Toutes les étapes sont terminées',
+    bonjour: 'Bonjour', dossier: 'Votre dossier', sousTitre: 'Suivi de votre dossier',
+    avancement: 'Avancement', etapeCours: 'Étape en cours', toutFait: 'Toutes les étapes sont terminées',
     documents: 'Vos documents', manquants: 'document(s) à fournir', paiements: 'Vos paiements', reste: 'Reste à payer', aJour: 'Vous êtes à jour',
     envoyer: 'Envoyer', renvoyer: 'Renvoyer', motif: 'Motif', honoraires: "Honoraires de l'agence", frais: 'Frais de procédure (payables d’avance)',
     paye: 'Payé', aPayer: 'À payer', fin: 'À la fin de la procédure', historique: 'Ce qui a été fait', rdv: 'Votre rendez-vous',
@@ -70,7 +84,8 @@ const T = {
     lienApercu: 'Aperçu de l’espace client (démonstration). Dans la version en ligne, le client y accède par un lien reçu par e-mail.', retour: 'Retour au dossier (personnel)',
   },
   ar: {
-    bonjour: 'مرحبًا', dossier: 'ملفكم', avancement: 'تقدّم الملف', etapeCours: 'المرحلة الحالية', toutFait: 'تم إنجاز جميع المراحل',
+    bonjour: 'مرحبًا', dossier: 'ملفكم', sousTitre: 'متابعة ملفكم',
+    avancement: 'تقدّم الملف', etapeCours: 'المرحلة الحالية', toutFait: 'تم إنجاز جميع المراحل',
     documents: 'وثائقكم', manquants: 'وثيقة مطلوبة', paiements: 'مدفوعاتكم', reste: 'المبلغ المتبقي', aJour: 'لا توجد مبالغ مستحقة',
     envoyer: 'إرسال', renvoyer: 'إعادة الإرسال', motif: 'السبب', honoraires: 'أتعاب الوكالة', frais: 'مصاريف الإجراءات (تُدفع مسبقًا)',
     paye: 'مدفوع', aPayer: 'للدفع', fin: 'عند نهاية الإجراءات', historique: 'ما تم إنجازه', rdv: 'موعدكم',
@@ -79,7 +94,12 @@ const T = {
     lienApercu: 'معاينة فضاء الزبون (نسخة تجريبية).', retour: 'العودة إلى الملف',
   },
 };
-const CLS: Record<StatutDocument, string> = { manquant: 'b-gris', envoye: 'b-bleu', valide: 'b-vert', refuse: 'b-rouge' };
+const CLS: Record<StatutDocument, { badge: string; icone: NomIcone }> = {
+  manquant: { badge: 'b-gris', icone: 'vide' },
+  envoye: { badge: 'b-bleu', icone: 'horloge' },
+  valide: { badge: 'b-vert', icone: 'coche' },
+  refuse: { badge: 'b-rouge', icone: 'alerte' },
+};
 
 export default function EspaceClient() {
   const { id } = useParams();
@@ -95,7 +115,20 @@ export default function EspaceClient() {
   const loc = ar ? 'ar-DZ' : 'fr-FR';
 
   if (modeEnLigne && !d) return <EcranConnexion client />;
-  if (!d || !c) return <div className="connexion"><div className="carte">{t.introuvable}</div></div>;
+  if (!d || !c) {
+    return (
+      <div className="connexion">
+        <EntreePage className="carte" style={{ display: 'grid', justifyItems: 'center', gap: 14 }}>
+          <span className="logo-medaillon"><img src="./logo.png" alt="Logo World Destination" /></span>
+          <div className="alerte alerte-orange" style={{ marginBottom: 0 }}>
+            <Icone nom="alerte" />
+            <span>{t.introuvable}</span>
+          </div>
+        </EntreePage>
+      </div>
+    );
+  }
+
   const p = progression(d);
   const manquants = d.documents.filter((x) => x.statut === 'manquant' || x.statut === 'refuse').length;
   const lignes = [
@@ -103,6 +136,7 @@ export default function EspaceClient() {
     ...d.frais.map((f) => ({ id: f.id, lib: libelle(f, ar), groupe: 'f', montant: f.montant, reste: resteFrais(d, f), devise: f.devise, exig: true })),
   ];
   const resteTotal = lignes.filter((l) => l.exig && l.reste > 0);
+  const journalPublic = [...d.journal].filter((e) => !e.interne).reverse().slice(0, 15);
 
   const choisir = (docId: string) => { cible.current = docId; input.current?.click(); };
   const fichier = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,85 +148,177 @@ export default function EspaceClient() {
   };
 
   return (
-    <div className={ar ? 'rtl' : ''} dir={ar ? 'rtl' : 'ltr'} lang={langue} style={{ minHeight: '100vh', background: 'var(--fond)' }}>
+    <div className={ar ? 'rtl' : ''} dir={ar ? 'rtl' : 'ltr'} lang={langue} style={{ minHeight: '100vh', background: 'var(--c-fond)' }}>
       <input ref={input} type="file" accept={TYPES_ACCEPTES} hidden onChange={fichier} />
       {staff && (
         <div className="alerte alerte-bleu" style={{ borderRadius: 0, margin: 0, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }} dir="ltr">
           <span>{T.fr.lienApercu}</span><Link to={`/dossiers/${d.id}`}>← {T.fr.retour}</Link>
         </div>
       )}
-      <header style={{ background: 'var(--primaire-fonce)', color: '#fff', padding: '14px 16px' }}>
-        <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src="./logo.png" alt="" style={{ width: 40, height: 40, borderRadius: '50%', background: '#fff' }} />
-          <b style={{ flex: 1 }}>World Destination</b>
-          <button onClick={() => setLangue(ar ? 'fr' : 'ar')} style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.5)' }}>{ar ? 'Français' : 'العربية'}</button>
+      <header className="portail-entete">
+        <div style={{ maxWidth: 780, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span className="logo-medaillon logo-medaillon-sm"><img src="./logo.png" alt="" /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <b style={{ display: 'block', lineHeight: 1.2 }}>World Destination</b>
+            <span className="petit" style={{ color: 'var(--c-chrome-texte)', opacity: 0.9 }}>{t.sousTitre}</span>
+          </div>
+          <button type="button" onClick={() => setLangue(ar ? 'fr' : 'ar')}>
+            <Icone nom="globe" taille={15} /> {ar ? 'Français' : 'العربية'}
+          </button>
         </div>
       </header>
-      <main style={{ maxWidth: 760, margin: '0 auto', padding: '20px 16px 60px', display: 'grid', gap: 16 }}>
-        <div>
-          <h1>{t.bonjour} {c.prenom}</h1>
-          <div className="muted">{t.dossier} : {d.intitule} · {d.numero}</div>
-        </div>
 
-        <section className="carte">
-          <h2>{t.avancement}</h2>
-          <Barre pourcent={p.pourcent} />
-          <p style={{ marginBottom: 0 }}>{p.courante ? <>{t.etapeCours} : <b>{libelle(p.courante, ar)}</b></> : <b>{t.toutFait}</b>} <span className="muted">({p.faites}/{p.total})</span></p>
-          {d.rdv && <div className="alerte alerte-bleu" style={{ marginTop: 12, marginBottom: 0 }}>📅 {t.rdv} : <b>{new Date(d.rdv.date).toLocaleString(loc, { dateStyle: 'full', timeStyle: 'short' })}</b> – {d.rdv.lieu}</div>}
-        </section>
-
-        <section className="carte">
-          <h2>{t.documents} {manquants > 0 && <span className="badge b-orange">{manquants} {t.manquants}</span>}</h2>
-          <p className="petit muted">{t.aide}</p>
-          <ul className="liste-simple">
-            {d.documents.map((doc) => (
-              <li key={doc.id}>
-                <div>
-                  <b>{libelle(doc, ar)}</b>
-                  {doc.statut === 'refuse' && <div className="petit" style={{ color: 'var(--rouge)' }}>{t.motif} : {doc.motifRefus}</div>}
-                </div>
-                <div className="actions">
-                  <span className={`badge ${CLS[doc.statut]}`}>{t.statut[doc.statut]}</span>
-                  {(doc.statut === 'manquant' || doc.statut === 'refuse') && d.statut === 'en_cours' && (
-                    <button className="btn-petit btn-primaire" onClick={() => choisir(doc.id)}>⬆ {doc.statut === 'refuse' ? t.renvoyer : t.envoyer}</button>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="carte">
-          <h2>{t.paiements}</h2>
-          {resteTotal.length === 0
-            ? <div className="alerte alerte-bleu">✔ {t.aJour}</div>
-            : <div className="alerte alerte-orange">{t.reste} : <b>{resteTotal.map((l, i) => <span key={l.id}>{i > 0 && ' + '}<bdi>{montant(l.reste, l.devise)}</bdi></span>)}</b></div>}
-          {(['h', 'f'] as const).map((g) => (
-            <div key={g} style={{ marginTop: 10 }}>
-              <h3>{g === 'h' ? t.honoraires : t.frais}</h3>
-              <ul className="liste-simple">
-                {lignes.filter((l) => l.groupe === g).map((l) => (
-                  <li key={l.id}>
-                    <span>{l.lib}</span>
-                    <span className="actions">
-                      <bdi className="num">{montant(l.montant, l.devise)}</bdi>
-                      {l.reste === 0 ? <span className="badge b-vert">{t.paye}</span> : l.exig ? <span className="badge b-orange">{t.aPayer}</span> : <span className="badge b-gris">{t.fin}</span>}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+      <main style={{ maxWidth: 780, margin: '0 auto', padding: '22px 16px 64px' }}>
+        <EntreePage style={{ display: 'grid', gap: 16 }}>
+          <div>
+            <h1>{t.bonjour} {c.prenom}</h1>
+            <div className="muted" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span>{t.dossier} : {d.intitule}</span>
+              <span className="badge b-bleu">{d.numero}</span>
             </div>
-          ))}
-        </section>
+          </div>
 
-        <section className="carte">
-          <h2>{t.historique}</h2>
-          <ul className="journal">
-            {[...d.journal].filter((e) => !e.interne).reverse().slice(0, 15).map((e) => (
-              <li key={e.id}><div style={{ flex: 1 }}><div>{ar ? journalArabe(e, d) : e.texte}</div><div className="petit muted">{new Date(e.date).toLocaleDateString(loc)}</div></div></li>
-            ))}
-          </ul>
-        </section>
+          <section className="carte">
+            <h2 className="titre-section">
+              <Icone nom="avion" taille={18} />
+              <span>{t.avancement}</span>
+              <span className="compteur ton-info">{p.faites}/{p.total}</span>
+            </h2>
+            <Barre pourcent={p.pourcent} label={t.avancement} />
+            <p style={{ marginBottom: 0, marginTop: 10 }}>
+              {p.courante ? <>{t.etapeCours} : <b>{libelle(p.courante, ar)}</b></> : <b>{t.toutFait}</b>}
+            </p>
+            {d.etapes.length > 0 && (
+              <div className="portail-etapes" role="group" aria-label={t.avancement}>
+                {d.etapes.map((et, idx) => {
+                  const courante = !et.faite && p.courante?.id === et.id;
+                  return (
+                    <span
+                      key={et.id}
+                      className={`etape-pilule ${et.faite ? 'est-faite' : courante ? 'est-courante' : ''}`}
+                      aria-current={courante ? 'step' : undefined}
+                    >
+                      {et.faite ? <Icone nom="coche" taille={13} /> : <span>{idx + 1}.</span>}
+                      <span>{libelle(et, ar)}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            {d.rdv && (
+              <div className="alerte alerte-bleu" style={{ marginTop: 14, marginBottom: 0 }}>
+                <Icone nom="calendrier" taille={18} />
+                <div>
+                  {t.rdv} : <b><bdi>{new Date(d.rdv.date).toLocaleString(loc, { dateStyle: 'full', timeStyle: 'short' })}</bdi></b> – {d.rdv.lieu}
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="carte">
+            <h2 className="titre-section">
+              <Icone nom="fichier" taille={18} />
+              <span>{t.documents}</span>
+              {manquants > 0 && <span className="badge b-orange" style={{ marginInlineStart: 'auto' }}>{manquants} {t.manquants}</span>}
+            </h2>
+            <p className="petit muted" style={{ marginTop: 0 }}>{t.aide}</p>
+            <StaggerListe as="ul" className="liste-simple">
+              {d.documents.map((doc) => {
+                const styleDoc = CLS[doc.statut];
+                return (
+                  <li key={doc.id}>
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      <b>{libelle(doc, ar)}</b>
+                      {doc.statut === 'refuse' && doc.motifRefus && (
+                        <div className="petit" style={{ color: 'var(--c-danger)', fontWeight: 500 }}>
+                          {t.motif} : {doc.motifRefus}
+                        </div>
+                      )}
+                    </div>
+                    <div className="actions">
+                      <span className={`badge ${styleDoc.badge}`}>
+                        <Icone nom={styleDoc.icone} taille={13} /> {t.statut[doc.statut]}
+                      </span>
+                      {(doc.statut === 'manquant' || doc.statut === 'refuse') && d.statut === 'en_cours' && (
+                        <button type="button" className="btn-petit btn-primaire" onClick={() => choisir(doc.id)}>
+                          <Icone nom="televerser" taille={14} /> {doc.statut === 'refuse' ? t.renvoyer : t.envoyer}
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </StaggerListe>
+          </section>
+
+          <section className="carte">
+            <h2 className="titre-section">
+              <Icone nom="paiement" taille={18} />
+              <span>{t.paiements}</span>
+            </h2>
+            {resteTotal.length === 0 ? (
+              <div className="alerte alerte-bleu">
+                <Icone nom="coche" taille={18} />
+                <span>{t.aJour}</span>
+              </div>
+            ) : (
+              <div className="alerte alerte-orange">
+                <Icone nom="paiement" taille={18} />
+                <div>
+                  {t.reste} : <b>{resteTotal.map((l, i) => <span key={l.id}>{i > 0 && ' + '}<bdi>{montant(l.reste, l.devise)}</bdi></span>)}</b>
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'grid', gap: 12 }}>
+              {(['h', 'f'] as const).map((g) => {
+                const sousLignes = lignes.filter((l) => l.groupe === g);
+                if (!sousLignes.length) return null;
+                return (
+                  <div key={g} className="section-formulaire" style={{ marginBottom: 0 }}>
+                    <h3 className="section-formulaire-titre">{g === 'h' ? t.honoraires : t.frais}</h3>
+                    <ul className="liste-simple">
+                      {sousLignes.map((l) => (
+                        <li key={l.id}>
+                          <span>{l.lib}</span>
+                          <span className="actions">
+                            <bdi className="num" style={{ fontWeight: 600 }}>{montant(l.montant, l.devise)}</bdi>
+                            {l.reste === 0 ? (
+                              <span className="badge b-vert">{t.paye}</span>
+                            ) : l.exig ? (
+                              <span className="badge b-orange">{t.aPayer}</span>
+                            ) : (
+                              <span className="badge b-gris">{t.fin}</span>
+                            )}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="carte">
+            <h2 className="titre-section">
+              <Icone nom="horloge" taille={18} />
+              <span>{t.historique}</span>
+            </h2>
+            <ul className="journal">
+              {journalPublic.map((e) => (
+                <li key={e.id}>
+                  <span className="icone" aria-hidden="true">
+                    <Icone nom={ICONE_JOURNAL[e.type]} taille={16} />
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div>{ar ? journalArabe(e, d) : e.texte}</div>
+                    <div className="petit muted">{new Date(e.date).toLocaleDateString(loc)}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </EntreePage>
       </main>
     </div>
   );

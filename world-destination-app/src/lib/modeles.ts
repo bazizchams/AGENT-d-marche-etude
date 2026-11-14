@@ -24,8 +24,6 @@ interface PaysSchengen {
   documentsEnPlus?: ModeleDocument[];
   /** Nom du dernier document commun (formulaire + rendez-vous), adapté au prestataire. */
   formulaire?: { nom: string; nomAr: string };
-  /** false : modèle masqué à la création de dossier (l'administrateur le réactive dans Paramètres). */
-  actif?: boolean;
 }
 
 const FORMULAIRE_STANDARD = { nom: 'Formulaire de demande signé + confirmation de rendez-vous', nomAr: 'استمارة الطلب موقّعة مع تأكيد الموعد' };
@@ -39,7 +37,7 @@ function modeleSchengen(p: PaysSchengen): ModeleDossier {
     couleur: p.couleur,
     honoraires: 25000,
     deviseHonoraires: 'DZD',
-    actif: p.actif ?? true,
+    actif: true,
     documents: [
       { id: 'd1', nom: 'Passeport (+ anciens visas)', nomAr: 'جواز السفر (مع التأشيرات السابقة)', avecExpiration: true },
       { id: 'd2', nom: "Photos d'identité", nomAr: 'صور شمسية', avecExpiration: false },
@@ -97,8 +95,7 @@ const PAYS_SCHENGEN: PaysSchengen[] = [
     id: 'm-schengen-be', pays: 'Belgique', couleur: '#f1c40f', depot: 'TLScontact Alger', prestataire: 'TLScontact', fraisService: 4190,
     formulaire: { nom: 'Formulaire signé + confirmation de rendez-vous TLScontact + reçu de prépaiement', nomAr: 'الاستمارة موقّعة مع تأكيد موعد TLScontact ووصل الدفع المسبق' },
   },
-  // TLScontact Alger. À CONFIRMER : frais de service non publiés lisiblement, et inconnus de l'agence (14/11/2026) ;
-  // valeur reprise de TLScontact Belgique.
+  // TLScontact Alger. À CONFIRMER : frais de service non publiés lisiblement ; valeur reprise de TLScontact Belgique.
   // Source : listes de documents static.tlscontact.com (dz2pt). Vérifié le 14/11/2026.
   {
     id: 'm-schengen-pt', pays: 'Portugal', couleur: '#16a085', depot: 'TLScontact Alger', prestataire: 'TLScontact', fraisService: 4190,
@@ -136,29 +133,9 @@ const PAYS_SCHENGEN: PaysSchengen[] = [
     id: 'm-schengen-pl', pays: 'Pologne', couleur: '#cb4335', depot: 'Ambassade de Pologne, Alger (e-Konsulat)',
     formulaire: { nom: 'Formulaire enregistré sur e-Konsulat, signé + confirmation de rendez-vous', nomAr: 'الاستمارة المسجّلة على منصة e-Konsulat موقّعة مع تأكيد الموعد' },
   },
-  // Dépôt en personne à l'ambassade de Bulgarie à Alger (13, bd Colonel Bougara), empreintes prises sur place, pas de prestataire
-  // ni de dépôt par courrier ou par un tiers ; traitement de 15 jours au moins (prévoir 4 à 6 semaines).
-  // À CONFIRMER : aucune page officielle de l'ambassade trouvée (mfa.bg ne donne que le titre ; Commission européenne :
-  // représentation bulgare listée en Algérie). Source : guides en ligne (embassyinformation.com, entrybrief.com) lus via
-  // recherche web. Revérifié le 14/11/2026.
+  // À CONFIRMER : dépôt direct à l'ambassade de Bulgarie à Alger (13, bd Colonel Bougara) ; procédure et prestataire non publiés en ligne.
+  // Source : mfa.bg (page ambassade Algérie), lue via recherche web. Vérifié le 14/11/2026.
   { id: 'm-schengen-bg', pays: 'Bulgarie', couleur: '#229954', depot: 'Ambassade de Bulgarie, Alger' },
-  // Dépôt direct à l'ambassade de la République tchèque à Alger, sans prestataire : rendez-vous gratuit demandé par e-mail
-  // à l'ambassade (une boîte pour le tourisme, avec un quota mensuel ; une autre pour les autres motifs), un e-mail par demandeur
-  // avec le justificatif du motif. Frais de visa (90 €) payés uniquement en espèces, en dinars, au taux de la Banque nationale
-  // tchèque. Section consulaire fermée du 08 au 19/03/2026 (page « Fermeture de la section consulaire et du visa » mise à jour
-  // le 28/05/2026). À CONFIRMER : état actuel de la section (site injoignable depuis la session).
-  // Source : mzv.gov.cz/algiers (pages « Enregistrement pour les visas Schengen », « La quota », « Augmentation des frais
-  // de visas Schengen »), lues via recherche web. Vérifié le 14/11/2026.
-  {
-    id: 'm-schengen-cz', pays: 'République tchèque', couleur: '#6c3483', depot: 'Ambassade de la République tchèque, Alger (rendez-vous par e-mail)',
-    formulaire: { nom: "Formulaire signé + confirmation de rendez-vous reçue par e-mail de l'ambassade", nomAr: 'الاستمارة موقّعة مع تأكيد الموعد المرسل من السفارة عبر البريد الإلكتروني' },
-  },
-  // INACTIF : l'ambassade de Roumanie à Alger a suspendu ses activités consulaires, visas compris, depuis le 07/10/2026
-  // (manque de personnel ; déjà suspendues du 25/06 au 16/09/2026, brève reprise du 17 au 30/09/2026). Aucune date de reprise
-  // annoncée. Le modèle est prêt mais masqué : l'administrateur l'active dans Paramètres › Types de dossiers à la reprise.
-  // À CONFIRMER à la reprise : mode de dépôt (ambassade ou prestataire) et frais éventuels de service.
-  // Sources : observalgerie.com (07/10/2026), tsa-algerie.com, algerie360.com, relayant le communiqué de l'ambassade. Vérifié le 14/11/2026.
-  { id: 'm-schengen-ro', pays: 'Roumanie', couleur: '#d4ac0d', depot: 'Ambassade de Roumanie, Alger', actif: false },
 ];
 
 export const MODELES_INITIAUX: ModeleDossier[] = [
