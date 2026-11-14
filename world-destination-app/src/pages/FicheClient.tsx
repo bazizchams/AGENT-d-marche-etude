@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Icone } from '../components/Icone';
-import { Barre, BadgeDossier, Modale, Vide, tenter } from '../components/ui';
+import { Barre, BadgeDossier, Modale, Vide, notifier, tenter } from '../components/ui';
 import { date, formatSoldes, nomClient, progression, soldes } from '../lib/regles';
-import { majClient, ouvrirDossier, useBase, useUtilisateur } from '../lib/store';
+import { inviterClient, majClient, ouvrirDossier, useBase, useUtilisateur } from '../lib/store';
 import type { Client, Langue } from '../lib/types';
 
 export default function FicheClient() {
@@ -41,6 +41,7 @@ export default function FicheClient() {
             <li><span className="muted">Langue</span><span lang={c.langue}>{c.langue === 'ar' ? 'العربية (arabe)' : 'Français'}</span></li>
             {c.contactSuivi && <li><span className="muted">Suivi par</span><span>{c.contactSuivi.nom}<br /><span className="petit">+{c.contactSuivi.telephone}</span></span></li>}
           </ul>
+          <Invitations client={c} />
           {!c.email && <div className="alerte alerte-orange" style={{ marginTop: 12, marginBottom: 0 }}><Icone nom="alerte" /><div>Ajoutez un e-mail pour que le client puisse accéder à son espace en ligne. <button type="button" className="btn-lien" onClick={() => setEdition(true)}>Ajouter l'e-mail</button></div></div>}
         </section>
 
@@ -53,7 +54,7 @@ export default function FicheClient() {
                 const p = progression(d);
                 return (
                   <li key={d.id} className="cliquable" onClick={() => nav(`/dossiers/${d.id}`)}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: '1 1 260px', minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <span className="pastille" style={{ background: m?.couleur }} />
                         <Link to={`/dossiers/${d.id}`}><b>{d.intitule}</b></Link>
@@ -74,6 +75,35 @@ export default function FicheClient() {
       {edition && <EditionClient client={c} onFermer={() => setEdition(false)} />}
       {nouveauDossier && <NouveauDossier clientId={c.id} onFermer={() => setNouveauDossier(false)} />}
     </>
+  );
+}
+
+/** Invitation à l'espace client (lien magique par e-mail), pour le client et la personne qui suit le dossier. */
+function Invitations({ client }: { client: Client }) {
+  const [envoi, setEnvoi] = useState<'client' | 'suivi' | null>(null);
+  const inviter = async (qui: 'client' | 'suivi') => {
+    const email = qui === 'client' ? client.email : client.contactSuivi?.email;
+    if (!email) {
+      notifier(qui === 'client'
+        ? "Ajoutez d'abord l'e-mail du client (bouton « Modifier le client »), puis renvoyez l'invitation."
+        : "Ajoutez d'abord l'e-mail de la personne qui suit le dossier (bouton « Modifier le client »).", true);
+      return;
+    }
+    setEnvoi(qui);
+    await tenter(() => inviterClient(client.id, qui), `Invitation envoyée à ${email}`);
+    setEnvoi(null);
+  };
+  return (
+    <div className="actions" style={{ marginTop: 'var(--esp-3)' }}>
+      <button type="button" onClick={() => inviter('client')} disabled={envoi !== null} aria-busy={envoi === 'client'}>
+        <Icone nom="courriel" taille={16} /> {envoi === 'client' ? 'Envoi en cours…' : "Inviter à l'espace client"}
+      </button>
+      {client.contactSuivi && (
+        <button type="button" onClick={() => inviter('suivi')} disabled={envoi !== null} aria-busy={envoi === 'suivi'}>
+          <Icone nom="courriel" taille={16} /> {envoi === 'suivi' ? 'Envoi en cours…' : 'Inviter le parent'}
+        </button>
+      )}
+    </div>
   );
 }
 

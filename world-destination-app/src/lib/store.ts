@@ -47,6 +47,9 @@ let session: string | null = MODE_EN_LIGNE
   ? null
   : (() => { try { return localStorage.getItem(CLE_SESSION); } catch { return null; } })();
 let chargement = MODE_EN_LIGNE;
+/** Double authentification des administrateurs (version en ligne) : étape à afficher. */
+export type EtatMfa = { etape: 'aucune' } | { etape: 'verification' } | { etape: 'enrolement'; obligatoire: boolean };
+let etatMfa: EtatMfa = { etape: 'aucune' };
 const abonnes = new Set<() => void>();
 const prevenir = () => abonnes.forEach((f) => f());
 
@@ -90,6 +93,7 @@ if (enLigne) {
       prevenir();
     },
     erreur: afficherErreur,
+    setMfa: (e) => { etatMfa = e; if (e.etape !== 'aucune') chargement = false; prevenir(); },
   })).catch((e) => { console.error(e); chargement = false; afficherErreur('Connexion au serveur impossible.'); prevenir(); });
 }
 
@@ -109,6 +113,11 @@ export function useUtilisateur(): Utilisateur | undefined {
 }
 
 export const getBase = () => base;
+
+/** Étape de double authentification en cours (toujours « aucune » en démonstration). */
+export function useEtatMfa(): EtatMfa {
+  return useSyncExternalStore(abonner, () => etatMfa);
+}
 
 /** Vrai pendant le premier chargement des données en ligne (toujours faux en démonstration). */
 export function useChargement(): boolean {
@@ -150,6 +159,46 @@ export async function envoyerLienMagique(email: string): Promise<void> {
 
 export async function changerMotDePasse(nouveau: string): Promise<void> {
   return (await moduleEnLigne()).changerMotDePasse(nouveau);
+}
+
+/** Vérification du code à 6 chiffres (administrateur dont la double authentification est activée). */
+export async function verifierCodeMfa(code: string): Promise<void> {
+  return (await moduleEnLigne()).verifierCodeMfa(code);
+}
+
+/** Première activation de la double authentification : renvoie le QR code à scanner. */
+export async function commencerEnrolementMfa(): Promise<{ qrCode: string; secret: string }> {
+  return (await moduleEnLigne()).commencerEnrolementMfa();
+}
+
+export async function confirmerEnrolementMfa(code: string): Promise<void> {
+  return (await moduleEnLigne()).confirmerEnrolementMfa(code);
+}
+
+/** « Plus tard » (refusé par le serveur quand la double authentification est obligatoire). */
+export async function reporterMfa(): Promise<void> {
+  return (await moduleEnLigne()).reporterMfa();
+}
+
+/** Consentement écrit du titulaire pour donner l'accès au parent ; le retirer coupe cet accès. */
+export async function enregistrerConsentementSuivi(clientId: string, accorde: boolean): Promise<void> {
+  try {
+    await (await moduleEnLigne()).enregistrerConsentementSuivi(clientId, accorde);
+  } catch (e) {
+    throw e instanceof ErreurMetier ? e : new ErreurMetier(e instanceof Error ? e.message : String(e));
+  }
+}
+
+/**
+ * Purge d'un dossier par un administrateur (fin de conservation, demande du client) : fichiers effacés,
+ * fiche anonymisée si demandé ; paiements, reçus et journal conservés. Version en ligne uniquement.
+ */
+export async function purgerDossier(dossierId: string, anonymiser = false): Promise<number> {
+  try {
+    return await (await moduleEnLigne()).purgerDossier(dossierId, anonymiser);
+  } catch (e) {
+    throw e instanceof ErreurMetier ? e : new ErreurMetier(e instanceof Error ? e.message : String(e));
+  }
 }
 
 /**

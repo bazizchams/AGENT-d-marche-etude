@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { donneesDemo } from '../demo';
 import { creerDossier, evenement } from '../regles';
 import type { Base } from '../types';
-import { differences, versBase, versLignes } from './correspondance';
+import { ajouterResumes, differences, versBase, versLignes } from './correspondance';
+import { resteFrais } from '../regles';
 
 const modifier = (b: Base, fn: (c: Base) => void) => { const c = structuredClone(b); fn(c); return c; };
 
@@ -77,5 +78,22 @@ describe('correspondance Base ⇄ tables Supabase', () => {
     expect(ops[0]).toMatchObject({ table: 'documents', action: 'update', patch: { nom_ar: 'جواز السفر' } });
     const relue = versBase(versLignes(apres));
     expect((relue.dossiers.find((x) => x.id === apres.dossiers[0].id)!.documents[0] as { nomAr?: string }).nomAr).toBe('جواز السفر');
+  });
+
+  it('agent (M-1) : les totaux résumés complètent le reste à payer sans jamais être renvoyés au serveur', () => {
+    const sansPaiements = modifier(base, (b) => { for (const d of b.dossiers) d.paiements = []; });
+    const d = sansPaiements.dossiers[0];
+    const f = d.frais[0];
+    const avecResumes = ajouterResumes(structuredClone(sansPaiements), [
+      { dossier_id: d.id, cible_type: 'frais', cible_id: f.id, devise: f.devise, total: String(f.montant) },
+    ]);
+    const d2 = avecResumes.dossiers.find((x) => x.id === d.id)!;
+    expect(resteFrais(d2, d2.frais[0])).toBe(0);
+    expect(differences(sansPaiements, avecResumes)).toEqual([]);
+    // Un total déjà couvert par les paiements visibles n'ajoute rien.
+    const deja = ajouterResumes(structuredClone(avecResumes), [
+      { dossier_id: d.id, cible_type: 'frais', cible_id: f.id, devise: f.devise, total: f.montant },
+    ]);
+    expect(deja.dossiers.find((x) => x.id === d.id)!.paiements).toHaveLength(1);
   });
 });

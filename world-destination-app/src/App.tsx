@@ -3,7 +3,7 @@ import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react
 import { Icone } from './components/Icone';
 import type { NomIcone } from './components/Icone';
 import { ZoneToast } from './components/ui';
-import { deconnexion, useUtilisateur } from './lib/store';
+import { deconnexion, modeEnLigne, useUtilisateur } from './lib/store';
 import Caisse from './pages/Caisse';
 import Clients from './pages/Clients';
 import Connexion from './pages/Connexion';
@@ -82,6 +82,11 @@ function Coquille() {
 export default function App() {
   return (
     <HashRouter>
+      {!modeEnLigne && (
+        <div className="bandeau-demo no-print" role="note">
+          <Icone nom="alerte" taille={16} /> Version de démonstration — ne saisissez pas de vrais clients
+        </div>
+      )}
       <Coquille />
       <ZoneToast />
     </HashRouter>

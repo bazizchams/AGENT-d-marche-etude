@@ -354,12 +354,12 @@ create or replace function tg_clients_journal() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare v_quoi text[] := '{}';
 begin
-  if new.email is distinct from old.email then v_quoi := v_quoi || 'e-mail'; end if;
-  if new.telephone is distinct from old.telephone then v_quoi := v_quoi || 'téléphone'; end if;
-  if new.contact_suivi is distinct from old.contact_suivi then v_quoi := v_quoi || 'personne qui suit le dossier'; end if;
-  if new.compte_id is distinct from old.compte_id then v_quoi := v_quoi || 'compte de l''espace client'; end if;
-  if new.compte_suivi_id is distinct from old.compte_suivi_id then v_quoi := v_quoi || 'compte de la personne qui suit'; end if;
-  if new.consentement_suivi_le is distinct from old.consentement_suivi_le then v_quoi := v_quoi || 'consentement pour l''accès du parent'; end if;
+  if new.email is distinct from old.email then v_quoi := v_quoi || 'e-mail'::text; end if;
+  if new.telephone is distinct from old.telephone then v_quoi := v_quoi || 'téléphone'::text; end if;
+  if new.contact_suivi is distinct from old.contact_suivi then v_quoi := v_quoi || 'personne qui suit le dossier'::text; end if;
+  if new.compte_id is distinct from old.compte_id then v_quoi := v_quoi || 'compte de l''espace client'::text; end if;
+  if new.compte_suivi_id is distinct from old.compte_suivi_id then v_quoi := v_quoi || 'compte de la personne qui suit'::text; end if;
+  if new.consentement_suivi_le is distinct from old.consentement_suivi_le then v_quoi := v_quoi || 'consentement pour l''accès du parent'::text; end if;
   if cardinality(v_quoi) > 0 then
     insert into journal (dossier_id, par, type, texte, interne)
     select d.id, auth.uid(), 'statut', 'Fiche client modifiée : ' || array_to_string(v_quoi, ', '), true
@@ -820,7 +820,11 @@ create policy paiements_creer on paiements for insert to authenticated with chec
 create policy paiements_annuler on paiements for update to authenticated using (est_admin()) with check (est_admin());
 
 -- Journal : ajout seul par le personnel (notes, messages) ; le client lit ce qui n'est pas interne.
-create policy journal_personnel_lire on journal for select to authenticated using (est_personnel());
+-- Les lignes « paiement » (montants) suivent la même règle que les paiements (M-1).
+create policy journal_personnel_lire on journal for select to authenticated using (
+  est_admin()
+  or (est_personnel() and (type <> 'paiement' or par = auth.uid()
+                           or dossier_id in (select id from dossiers where agent_id = auth.uid()))));
 -- Le personnel n'ajoute que des notes et des messages : les autres lignes viennent des triggers (pas de faux encaissement).
 create policy journal_personnel_ajout on journal for insert to authenticated with check (est_personnel() and type in ('note', 'message'));
 create policy journal_client on journal for select to authenticated using (not interne and dossier_id in (select mes_dossiers()));

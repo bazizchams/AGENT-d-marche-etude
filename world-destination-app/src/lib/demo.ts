@@ -68,7 +68,7 @@ export function donneesDemo(): Base {
   valider(d1, 8, -50);
   d1.documents[0].expiration = jourCourt(20); // passeport qui expire bientôt
   etapes(d1, 7, -50); // jusqu'au contrat d'Ausbildung signé
-  d1.rdv = { date: jour(9).slice(0, 16), lieu: "Ambassade d'Allemagne / VFS Global Alger" };
+  d1.rdv = { date: jour(9).slice(0, 16), lieu: "Ambassade d'Allemagne, Alger" };
 
   // 2. Amina – Campus France, un document envoyé par le client à vérifier, un refusé
   const d2 = ouvrir(clients[1], 'm-campus', 'u-agent2', -45);

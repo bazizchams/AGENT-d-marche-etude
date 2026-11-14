@@ -522,7 +522,7 @@ function ModaleWhatsApp({ type, d, c, onFermer }: { type: TypeMessage; d: Dossie
       <div className="pied">
         <button type="button" onClick={onFermer}>Fermer</button>
         {cible.email && (
-          <a className="btn" href={`mailto:${cible.email}?subject=${encodeURIComponent(`World Destination – dossier ${d.numero}`)}&body=${encodeURIComponent(texte)}`}
+          <a className="btn" href={`mailto:${encodeURIComponent(cible.email)}?subject=${encodeURIComponent(`World Destination – dossier ${d.numero}`)}&body=${encodeURIComponent(texte)}`}
             onClick={() => tracer('e-mail')}><Icone nom="courriel" taille={16} /> Envoyer par e-mail</a>
         )}
         <a className="btn btn-wa" href={lienWhatsApp(cible.tel, texte)} target="_blank" rel="noopener noreferrer"

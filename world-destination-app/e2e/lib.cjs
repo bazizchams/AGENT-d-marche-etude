@@ -85,6 +85,9 @@ async function creerClient(page, { prenom, nom, telephone, email = '', type = 'C
   await dlg.getByRole('button', { name: /^Créer le client/ }).click();
   if (!type) { await page.waitForURL(/#\/clients\/[^?]+$/); return null; }
   await page.waitForURL(/#\/dossiers\/[^/?]+/);
+  // L'écran du dossier peut s'afficher un peu après le changement d'URL : attendre ses onglets.
+  await page.getByRole('tab', { name: /^Documents/ }).waitFor();
+  await page.getByRole('table').getByRole('row').nth(1).waitFor();
   return idDossier(page);
 }
 

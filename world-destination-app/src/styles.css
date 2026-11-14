@@ -539,7 +539,7 @@ tr.annule td { color: var(--c-texte-2); }
 /* Grilles de page */
 .g-1-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: start; }
 .g-2-1 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
-.g-frais { grid-template-columns: 2fr 1.5fr 1fr 90px auto; }
+.g-frais { grid-template-columns: 1.6fr 1.6fr 1.4fr 1fr 80px auto; }
 @media (max-width: 860px) {
   .g-1-2, .g-2-1 { grid-template-columns: 1fr; }
   .g-frais { grid-template-columns: 1fr 1fr; }
@@ -611,3 +611,21 @@ tr.annule td { color: var(--c-texte-2); }
 @media (max-width: 640px) { .table-cartes td.masque-mobile { display: none; } }
 @media (min-width: 641px) { td.cellule-actions .actions { flex-wrap: nowrap; } td.cellule-actions { white-space: nowrap; width: 1%; } }
 .liste-compteurs li { flex-wrap: nowrap !important; }
+
+/* Bandeau permanent du mode démonstration */
+.bandeau-demo {
+  display: flex; align-items: center; justify-content: center; gap: var(--esp-2); padding: 6px var(--esp-4);
+  background: var(--rouge-700); color: #fff; font-size: var(--taille-s); font-weight: var(--graisse-forte); text-align: center;
+}
+
+/* Éditeur de modèle : une ligne = nom FR + nom AR + options + commandes */
+.ligne-modele { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto auto auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+.ligne-modele.ligne-etape { grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) auto auto auto; }
+@media (max-width: 640px) {
+  .ligne-modele { grid-template-columns: 1fr auto auto auto; padding-bottom: 8px; border-bottom: 1px solid var(--c-bord); }
+  .ligne-modele > input:not([type='checkbox']) { grid-column: 1 / -1; }
+  .ligne-modele.ligne-etape { grid-template-columns: 22px 1fr 1fr 1fr; }
+  .ligne-modele.ligne-etape > button:first-of-type { grid-column-start: 2; }
+  .ligne-modele.ligne-etape > button { justify-content: center; }
+  .ligne-modele.ligne-etape > input:not([type='checkbox']) { grid-column: 2 / -1; }
+}

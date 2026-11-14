@@ -77,9 +77,11 @@ function EditeurModele({ initial, onFermer }: { initial: ModeleDossier; onFermer
         <label className="case" style={{ marginBottom: 12 }}><input type="checkbox" checked={m.actif} onChange={(e) => maj({ actif: e.target.checked })} /> Proposé à la création des dossiers</label>
 
         <h3>Documents à fournir</h3>
+        <p className="petit muted">Le nom arabe s'affiche dans l'espace client et les messages des clients arabophones (à défaut, le nom français est utilisé).</p>
         {m.documents.map((d, i) => (
-          <div key={d.id} className="actions" style={{ marginBottom: 6, flexWrap: 'nowrap' }}>
-            <input aria-label={`Document ${i + 1}`} value={d.nom} onChange={(e) => maj({ documents: m.documents.map((x) => x.id === d.id ? { ...x, nom: e.target.value } : x) })} />
+          <div key={d.id} className="ligne-modele">
+            <input aria-label={`Document ${i + 1} (français)`} placeholder="Nom en français" value={d.nom} onChange={(e) => maj({ documents: m.documents.map((x) => x.id === d.id ? { ...x, nom: e.target.value } : x) })} />
+            <input aria-label={`Document ${i + 1} (arabe)`} placeholder="الاسم بالعربية" dir="rtl" lang="ar" value={d.nomAr ?? ''} onChange={(e) => maj({ documents: m.documents.map((x) => x.id === d.id ? { ...x, nomAr: e.target.value || undefined } : x) })} />
             <label className="case" style={{ whiteSpace: 'nowrap' }}>
               <input type="checkbox" checked={d.avecExpiration} onChange={(e) => maj({ documents: m.documents.map((x) => x.id === d.id ? { ...x, avecExpiration: e.target.checked } : x) })} /> Expire
             </label>
@@ -93,7 +95,8 @@ function EditeurModele({ initial, onFermer }: { initial: ModeleDossier; onFermer
         <h3 style={{ marginTop: 18 }}>Frais de procédure (payés à 100 % d'avance)</h3>
         {m.frais.map((f, i) => (
           <div key={f.id} className="grille g-frais" style={{ gap: 6, marginBottom: 6 }}>
-            <input aria-label={`Frais ${i + 1}`} placeholder="Nom" value={f.nom} onChange={(e) => maj({ frais: m.frais.map((x) => x.id === f.id ? { ...x, nom: e.target.value } : x) })} />
+            <input aria-label={`Frais ${i + 1} (français)`} placeholder="Nom en français" value={f.nom} onChange={(e) => maj({ frais: m.frais.map((x) => x.id === f.id ? { ...x, nom: e.target.value } : x) })} />
+            <input aria-label={`Frais ${i + 1} (arabe)`} placeholder="الاسم بالعربية" dir="rtl" lang="ar" value={f.nomAr ?? ''} onChange={(e) => maj({ frais: m.frais.map((x) => x.id === f.id ? { ...x, nomAr: e.target.value || undefined } : x) })} />
             <input aria-label="Organisme" placeholder="Organisme" value={f.organisme} onChange={(e) => maj({ frais: m.frais.map((x) => x.id === f.id ? { ...x, organisme: e.target.value } : x) })} />
             <input aria-label="Montant" type="number" min={0} value={f.montant} onChange={(e) => maj({ frais: m.frais.map((x) => x.id === f.id ? { ...x, montant: Number(e.target.value) } : x) })} />
             <SelectDevise value={f.devise} onChange={(v) => maj({ frais: m.frais.map((x) => x.id === f.id ? { ...x, devise: v } : x) })} />
@@ -106,9 +109,10 @@ function EditeurModele({ initial, onFermer }: { initial: ModeleDossier; onFermer
         <p className="petit muted">Cochez les frais qui doivent être encaissés avant de pouvoir valider l'étape.</p>
         {m.etapes.map((e, i) => (
           <div key={e.id} style={{ marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid var(--bord)' }}>
-            <div className="actions" style={{ flexWrap: 'nowrap' }}>
+            <div className="ligne-modele ligne-etape">
               <b style={{ width: 22 }}>{i + 1}.</b>
-              <input aria-label={`Étape ${i + 1}`} value={e.nom} onChange={(ev) => maj({ etapes: m.etapes.map((x) => x.id === e.id ? { ...x, nom: ev.target.value } : x) })} />
+              <input aria-label={`Étape ${i + 1} (français)`} placeholder="Nom en français" value={e.nom} onChange={(ev) => maj({ etapes: m.etapes.map((x) => x.id === e.id ? { ...x, nom: ev.target.value } : x) })} />
+              <input aria-label={`Étape ${i + 1} (arabe)`} placeholder="الاسم بالعربية" dir="rtl" lang="ar" value={e.nomAr ?? ''} onChange={(ev) => maj({ etapes: m.etapes.map((x) => x.id === e.id ? { ...x, nomAr: ev.target.value || undefined } : x) })} />
               <button type="button" className="btn-petit btn-icone" aria-label={`Monter ${e.nom || `étape ${i + 1}`}`} title="Monter" disabled={i === 0} onClick={() => maj({ etapes: deplacer(m.etapes, i, -1) })}>↑</button>
               <button type="button" className="btn-petit btn-icone" aria-label={`Descendre ${e.nom || `étape ${i + 1}`}`} title="Descendre" disabled={i === m.etapes.length - 1} onClick={() => maj({ etapes: deplacer(m.etapes, i, 1) })}>↓</button>
               <button type="button" className="btn-petit btn-danger btn-icone" aria-label={`Retirer ${e.nom || `étape ${i + 1}`}`} title="Retirer" onClick={() => maj({ etapes: m.etapes.filter((x) => x.id !== e.id) })}><Icone nom="croix" taille={16} /></button>

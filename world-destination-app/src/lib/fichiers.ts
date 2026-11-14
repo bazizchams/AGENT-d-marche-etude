@@ -56,6 +56,7 @@ export async function ouvrirFichier(id: string) {
   if (MODE_EN_LIGNE) {
     // La fenêtre est ouverte tout de suite (sinon le navigateur la bloque), puis reçoit l'URL signée.
     const fenetre = window.open('about:blank', '_blank');
+    if (fenetre) fenetre.opener = null; // l'onglet ouvert ne peut pas agir sur l'application
     try {
       const url = await (await enLigne()).urlSignee(id);
       if (fenetre) fenetre.location.href = url; else window.location.assign(url);

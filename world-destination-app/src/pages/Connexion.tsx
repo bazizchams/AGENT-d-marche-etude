@@ -1,7 +1,13 @@
 import { Icone } from '../components/Icone';
-import { connexion, useBase } from '../lib/store';
+import EcranConnexion from '../lib/supabase/EcranConnexion';
+import { connexion, modeEnLigne, useBase } from '../lib/store';
 
 export default function Connexion() {
+  if (modeEnLigne) return <EcranConnexion />;
+  return <ConnexionDemo />;
+}
+
+function ConnexionDemo() {
   const base = useBase();
   return (
     <div className="connexion">

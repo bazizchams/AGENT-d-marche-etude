@@ -231,6 +231,35 @@ export function versBase(l: Partial<Lignes>, compteurs: { dossier: number; recu:
   return b;
 }
 
+/* ------------------------------------------------------------------ paiements résumés (agents) */
+
+/** Préfixe des paiements « résumés » : totaux sans détail, pour les dossiers dont l'agent n'a pas la charge. */
+export const PREFIXE_RESUME = 'resume-';
+
+export interface ResumePaiement { dossier_id: string; cible_type: 'echeance' | 'frais'; cible_id: string; devise: string; total: number | string }
+
+/**
+ * Un agent ne lit que les paiements de ses dossiers (règle M-1). Pour les autres, le serveur donne seulement
+ * le total encaissé par échéance ou frais : on l'ajoute sous forme d'une ligne « résumé » pour que le reste à payer
+ * et le blocage des étapes restent justes. Cette ligne n'est jamais renvoyée au serveur.
+ */
+export function ajouterResumes(b: Base, resumes: ResumePaiement[]): Base {
+  for (const r of resumes) {
+    const d = b.dossiers.find((x) => x.id === String(r.dossier_id));
+    if (!d) continue;
+    const visible = d.paiements
+      .filter((p) => !p.annule && p.cible.type === r.cible_type && p.cible.id === String(r.cible_id))
+      .reduce((s, p) => s + p.montant, 0);
+    const manque = Math.round((num(r.total) - visible) * 100) / 100;
+    if (manque <= 0) continue;
+    d.paiements.unshift({
+      id: `${PREFIXE_RESUME}${r.cible_id}`, numeroRecu: '—', cible: { type: r.cible_type, id: String(r.cible_id) },
+      montant: manque, devise: r.devise as Paiement['devise'], mode: 'especes', date: d.ouvertLe, par: '',
+    });
+  }
+  return b;
+}
+
 /* ------------------------------------------------------------------ différences */
 
 export type Operation =
@@ -251,6 +280,7 @@ export function differences(avant: Base, apres: Base): Operation[] {
     const anciens = new Map(la[t].map((r) => [String(r.id), r]));
     const nouveaux: Ligne[] = [];
     for (const r of lb[t]) {
+      if (t === 'paiements' && String(r.id).startsWith(PREFIXE_RESUME)) continue; // ligne de résumé locale
       const ancien = anciens.get(String(r.id));
       if (!ancien) {
         if (t === 'journal' && EVENEMENTS_SERVEUR.includes(r.type as TypeEvenement)) continue;

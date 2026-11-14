@@ -10,8 +10,9 @@ export function supabase(): SupabaseClient {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        // Les liens magiques et les invitations reviennent avec les jetons dans l'URL : on les lit au démarrage.
-        detectSessionInUrl: true,
+        // Les jetons d'un lien magique sont lus par synchro.ts (lireJetonsDansAdresse), qui les efface de
+        // l'adresse ET de l'historique du navigateur avant d'ouvrir la session.
+        detectSessionInUrl: false,
         // « implicit » : le lien fonctionne même s'il est ouvert sur un autre appareil que celui qui l'a demandé
         // (le client demande souvent le lien sur un PC puis l'ouvre sur son téléphone).
         flowType: 'implicit',

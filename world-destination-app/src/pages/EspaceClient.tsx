@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { Barre, notifier, tenter } from '../components/ui';
 import { TAILLE_MAX, TYPES_ACCEPTES } from '../lib/fichiers';
 import { echeanceExigible, montant, progression, resteEcheance, resteFrais } from '../lib/regles';
-import { televerserParClient, useBase, useUtilisateur } from '../lib/store';
+import { modeEnLigne, televerserParClient, useBase, useUtilisateur } from '../lib/store';
+import EcranConnexion from '../lib/supabase/EcranConnexion';
 import type { Dossier, Evenement, Langue, StatutDocument } from '../lib/types';
 
 /** Libellé affiché selon la langue : arabe si disponible, sinon français. */
@@ -93,6 +94,7 @@ export default function EspaceClient() {
   const ar = langue === 'ar';
   const loc = ar ? 'ar-DZ' : 'fr-FR';
 
+  if (modeEnLigne && !d) return <EcranConnexion client />;
   if (!d || !c) return <div className="connexion"><div className="carte">{t.introuvable}</div></div>;
   const p = progression(d);
   const manquants = d.documents.filter((x) => x.statut === 'manquant' || x.statut === 'refuse').length;

@@ -2,7 +2,7 @@
 /**
  * Lanceur des tests de bout en bout.
  * - démarre `npx vite --port 4175 --strictPort` (sauf si E2E_BASE est fourni) ;
- * - exécute chaque scénario dans un navigateur neuf (localStorage vide) ;
+ * - exécute chaque scénario dans un contexte navigateur vierge (localStorage vide) ;
  * - échoue un scénario s'il produit une erreur console ou une exception de page ;
  * - affiche un résumé et arrête le serveur.
  *
@@ -61,13 +61,11 @@ async function main() {
   let browser;
   try {
     await attendreServeur(process.env.E2E_BASE);
+    browser = await chromium.launch({ headless: !process.env.E2E_HEADED });
     const scenarios = chargerScenarios();
     console.log(`\n${scenarios.length} scénario(s) – ${process.env.E2E_BASE}\n`);
     for (const s of scenarios) {
       const t0 = Date.now();
-      // Un navigateur par scénario : dans un même Chromium, le sélecteur de fichier
-      // ne s'ouvre plus après la fermeture du premier contexte (constaté avec Playwright).
-      browser = await chromium.launch({ headless: !process.env.E2E_HEADED });
       const { context, page, erreurs } = await nouvellePage(browser, { mobile: !!s.mobile });
       let echec = null;
       try {
@@ -86,8 +84,6 @@ async function main() {
         } catch { /* capture impossible */ }
       }
       await context.close();
-      await browser.close();
-      browser = null;
       const ms = Date.now() - t0;
       resultats.push({ ...s, echec, ms });
       console.log(`${echec ? '✗' : '✓'} ${s.nom} (${ms} ms)${echec ? `\n      ${echec}` : ''}`);

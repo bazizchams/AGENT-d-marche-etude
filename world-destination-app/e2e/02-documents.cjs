@@ -4,7 +4,8 @@ const {
 } = require('./lib.cjs');
 
 async function premierDocument(page) {
-  const rows = page.getByRole('table').getByRole('row');
+  await page.getByRole('tab', { name: /^Documents/ }).waitFor();
+  const rows = page.getByRole('table').filter({ has: page.getByRole('columnheader', { name: /Document/i }) }).getByRole('row');
   // ligne 0 = en-tête
   return (await rows.nth(1).getByRole('cell').first().locator('b').textContent()).trim();
 }
