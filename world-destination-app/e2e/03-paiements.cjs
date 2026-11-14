@@ -1,6 +1,6 @@
 /** Paiements : contrôle du montant, reçus numérotés, étapes bloquées par les frais, 2e tranche. */
 const {
-  assert, url, re, reMontant, connexion, creerClient, onglet, ligne, visible, attendre, toast,
+  assert, aller, url, re, reMontant, connexion, creerClient, onglet, ligne, visible, attendre, toast,
 } = require('./lib.cjs');
 
 /** Ouvre la modale d'encaissement d'une ligne et enregistre `montant` (ou la valeur proposée). */
@@ -34,6 +34,7 @@ async function payerTousLesFrais(page) {
 
 async function toutesLesEtapes(page) {
   await onglet(page, 'Étapes');
+  await page.getByRole('list').first().waitFor();
   for (let i = 0; i < 20; i++) {
     const btn = page.getByRole('button', { name: 'Marquer comme faite' });
     if (!(await btn.count())) break;
@@ -124,6 +125,7 @@ module.exports = [
       await visible(ligne(page, /50 % à la fin/).getByText('À la fin de la procédure'), '2e tranche non exigible au départ');
       await payerTousLesFrais(page);
       await onglet(page, 'Étapes');
+      await page.getByRole('button', { name: 'Marquer comme faite' }).first().waitFor();
       // Toutes sauf la dernière
       const boutons = page.getByRole('button', { name: 'Marquer comme faite' });
       const total = await boutons.count();
@@ -136,7 +138,7 @@ module.exports = [
       await visible(ligne(page, /50 % à la fin/).getByText('À encaisser'), '2e tranche exigible quand toutes les étapes sont faites');
       // Le tableau de bord la liste parmi les impayés
       const id = page.url().match(/dossiers\/([^?]+)/)[1];
-      await page.goto(url('/'));
+      await aller(page, ('/'));
       const item = page.locator('#impayes').getByRole('listitem').filter({ hasText: /Lyes TRANCHE/ });
       await visible(item.getByText(/50 % à la fin/), 'tableau de bord : 2e tranche dans les paiements exigibles');
       void id;
@@ -147,7 +149,7 @@ module.exports = [
     async run({ page }) {
       await connexion(page, 'Agent Karim');
       await creerClient(page, { prenom: 'Mounir', nom: 'Cloture', telephone: '0558 00 00 77', type: 'Visa Schengen' });
-      await page.goto(url('/'));
+      await aller(page, ('/'));
       assert.equal(await page.locator('#impayes').getByRole('listitem').filter({ hasText: /Mounir CLOTURE/ }).filter({ hasText: /50 % à la fin/ }).count(), 0,
         'tableau de bord : 2e tranche absente avant clôture');
       await page.goBack();

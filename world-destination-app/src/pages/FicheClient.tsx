@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Icone } from '../components/Icone';
 import { Barre, BadgeDossier, Modale, Vide, tenter } from '../components/ui';
 import { date, formatSoldes, nomClient, progression, soldes } from '../lib/regles';
 import { majClient, ouvrirDossier, useBase, useUtilisateur } from '../lib/store';
@@ -12,20 +13,20 @@ export default function FicheClient() {
   const [edition, setEdition] = useState(false);
   const [nouveauDossier, setNouveauDossier] = useState(false);
   const c = base.clients.find((x) => x.id === id);
-  if (!c) return <Vide>Ce client n'existe pas ou a été supprimé. <Link to="/clients">Retour à la liste des clients</Link></Vide>;
+  if (!c) return <Vide icone="clients" action={<Link className="btn btn-petit" to="/clients">Retour à la liste des clients</Link>}>Ce client n'existe pas ou a été supprimé.</Vide>;
   const dossiers = base.dossiers.filter((d) => d.clientId === c.id).sort((a, b) => b.ouvertLe.localeCompare(a.ouvertLe));
 
   return (
     <>
       <div className="entete">
         <div>
-          <div className="petit"><Link to="/clients">← Clients</Link></div>
+          <Link className="fil" to="/clients"><Icone nom="retour" taille={16} /> Clients</Link>
           <h1>{nomClient(c)}</h1>
           <div className="muted">Client depuis le {date(c.creeLe)}</div>
         </div>
         <div className="actions">
-          <button onClick={() => setEdition(true)}>✏️ Modifier</button>
-          <button className="btn-primaire" onClick={() => setNouveauDossier(true)}>＋ Nouveau dossier</button>
+          <button type="button" onClick={() => setEdition(true)}><Icone nom="crayon" taille={16} /> Modifier le client</button>
+          <button type="button" className="btn-primaire" onClick={() => setNouveauDossier(true)}><Icone nom="plus" taille={16} /> Nouveau dossier</button>
         </div>
       </div>
 
@@ -37,21 +38,21 @@ export default function FicheClient() {
             <li><span className="muted">E-mail</span><span>{c.email || '—'}</span></li>
             <li><span className="muted">Naissance</span><span>{date(c.dateNaissance) || '—'}</span></li>
             <li><span className="muted">Adresse</span><span>{c.adresse || '—'}</span></li>
-            <li><span className="muted">Langue</span><span>{c.langue === 'ar' ? 'العربية' : 'Français'}</span></li>
+            <li><span className="muted">Langue</span><span lang={c.langue}>{c.langue === 'ar' ? 'العربية (arabe)' : 'Français'}</span></li>
             {c.contactSuivi && <li><span className="muted">Suivi par</span><span>{c.contactSuivi.nom}<br /><span className="petit">+{c.contactSuivi.telephone}</span></span></li>}
           </ul>
-          {!c.email && <div className="alerte alerte-orange" style={{ marginTop: 12 }}>Ajoutez un e-mail pour que le client puisse accéder à son espace en ligne.</div>}
+          {!c.email && <div className="alerte alerte-orange" style={{ marginTop: 12, marginBottom: 0 }}><Icone nom="alerte" /><div>Ajoutez un e-mail pour que le client puisse accéder à son espace en ligne. <button type="button" className="btn-lien" onClick={() => setEdition(true)}>Ajouter l'e-mail</button></div></div>}
         </section>
 
         <section className="carte">
           <h2>Dossiers ({dossiers.length})</h2>
-          {dossiers.length === 0 ? <Vide>Aucun dossier. <button className="btn-petit" onClick={() => setNouveauDossier(true)}>Ouvrir un dossier</button></Vide> : (
+          {dossiers.length === 0 ? <Vide icone="dossier" action={<button type="button" className="btn-petit btn-primaire" onClick={() => setNouveauDossier(true)}>Ouvrir un dossier</button>}>Aucun dossier pour ce client.</Vide> : (
             <ul className="liste-simple">
               {dossiers.map((d) => {
                 const m = base.modeles.find((x) => x.id === d.modeleId);
                 const p = progression(d);
                 return (
-                  <li key={d.id} style={{ cursor: 'pointer' }} onClick={() => nav(`/dossiers/${d.id}`)}>
+                  <li key={d.id} className="cliquable" onClick={() => nav(`/dossiers/${d.id}`)}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <span className="pastille" style={{ background: m?.couleur }} />
@@ -60,7 +61,7 @@ export default function FicheClient() {
                         <BadgeDossier statut={d.statut} />
                       </div>
                       <div className="petit muted" style={{ margin: '4px 0' }}>{p.courante?.nom ?? 'Toutes les étapes sont terminées'}</div>
-                      <Barre pourcent={p.pourcent} />
+                      <Barre pourcent={p.pourcent} label={`Avancement ${d.numero}`} />
                     </div>
                     <div className="num petit" style={{ minWidth: 120 }}>Reste : <b>{formatSoldes(soldes(d), 'reste')}</b></div>
                   </li>
@@ -138,7 +139,7 @@ export function NouveauDossier({ clientId, onFermer }: { clientId: string; onFer
           <select id="a" value={agentId} onChange={(e) => setAgentId(e.target.value)}>{base.utilisateurs.filter((u) => u.actif && u.role !== 'client').map((u) => <option key={u.id} value={u.id}>{u.nom}</option>)}</select>
         </div>
         <div className="champ"><label htmlFor="i">Précision (facultatif)</label><input id="i" value={intitule} onChange={(e) => setIntitule(e.target.value)} /></div>
-        {m && <div className="alerte alerte-bleu">Seront créés : {m.documents.length} documents à fournir, {m.etapes.length} étapes, 2 échéances d'honoraires (50 % / 50 %) et {m.frais.length} frais de procédure.</div>}
+        {m && <div className="alerte alerte-bleu"><Icone nom="info" /><div>Seront créés : {m.documents.length} documents à fournir, {m.etapes.length} étapes, 2 échéances d'honoraires (50 % / 50 %) et {m.frais.length} frais de procédure.</div></div>}
         <div className="pied"><button type="button" onClick={onFermer}>Annuler</button><button type="submit" className="btn-primaire" disabled={!modeleId}>Ouvrir le dossier</button></div>
       </form>
     </Modale>

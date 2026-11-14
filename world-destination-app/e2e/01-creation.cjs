@@ -1,6 +1,6 @@
 /** Création d'un client et de son dossier ; détection des doublons de téléphone. */
 const {
-  assert, url, re, reMontant, connexion, creerClient, onglet, ligne, visible, toast,
+  assert, aller, url, re, reMontant, connexion, creerClient, onglet, ligne, visible, toast,
 } = require('./lib.cjs');
 
 module.exports = [
@@ -31,6 +31,7 @@ module.exports = [
       assert.equal(faites, 0);
       assert.ok(totalEtapes >= 3, `étapes générées (${totalEtapes})`);
       await onglet(page, 'Étapes');
+      await page.getByRole('button', { name: /Marquer comme faite/ }).first().waitFor();
       assert.equal(await page.getByRole('listitem').filter({ has: page.getByRole('button', { name: /Marquer comme faite|Frais non encaissés/ }) }).count(), totalEtapes,
         'une ligne par étape, chacune avec son action');
 
@@ -57,7 +58,7 @@ module.exports = [
     nom: 'Création : champs obligatoires et format de téléphone',
     async run({ page }) {
       await connexion(page, 'Agent Karim');
-      await page.goto(url('/clients?nouveau=1'));
+      await aller(page, ('/clients?nouveau=1'));
       const dlg = page.getByRole('dialog', { name: 'Nouveau client' });
       await dlg.getByRole('button', { name: /^Créer le client/ }).click();
       await visible(dlg.getByText('Saisissez le prénom.'), 'erreur prénom');
@@ -74,7 +75,7 @@ module.exports = [
     async run({ page }) {
       await connexion(page, 'Agent Sara');
       // Client de démonstration : Yacine BENALI, 213550000001
-      await page.goto(url('/clients?nouveau=1'));
+      await aller(page, ('/clients?nouveau=1'));
       let dlg = page.getByRole('dialog', { name: 'Nouveau client' });
       await dlg.getByLabel(/^Téléphone/).fill('0550 00 00 01');
       await visible(dlg.getByText(/existe déjà/), 'alerte doublon pour un numéro saisi au format local');
@@ -86,7 +87,7 @@ module.exports = [
       await dlg.getByRole('button', { name: 'Annuler' }).click();
 
       await creerClient(page, { prenom: 'Omar', nom: 'Doublon', telephone: '0770 11 22 33', type: '' });
-      await page.goto(url('/clients?nouveau=1'));
+      await aller(page, ('/clients?nouveau=1'));
       dlg = page.getByRole('dialog', { name: 'Nouveau client' });
       await dlg.getByLabel(/^Téléphone/).fill('213770112233');
       await visible(dlg.getByRole('link', { name: /Omar DOUBLON/ }), 'doublon détecté sur un client créé dans la session');

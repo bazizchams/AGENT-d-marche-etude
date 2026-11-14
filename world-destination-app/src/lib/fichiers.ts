@@ -1,10 +1,26 @@
 /**
  * Stockage des fichiers téléversés.
  * Mode démonstration : IndexedDB du navigateur.
- * En production, ce module sera remplacé par le stockage sécurisé Supabase (même interface).
+ * Version en ligne (variables VITE_SUPABASE_* définies) : bucket privé Supabase « documents »,
+ * lecture par URL signée (voir src/lib/supabase/fichiers.ts). Même interface dans les deux cas.
  */
+import { uid } from './regles';
+import { MODE_EN_LIGNE } from './supabase/config';
+
 const DB = 'wd-fichiers';
 const STORE = 'fichiers';
+
+const enLigne = () => import('./supabase/fichiers');
+
+/**
+ * Identifiant du fichier d'un document.
+ * En ligne, c'est son chemin dans le bucket (<dossier_id>/<id>.<ext>), exigé par les règles d'accès.
+ */
+export function idFichier(dossierId: string, fichier: { name: string }): string {
+  if (!MODE_EN_LIGNE) return uid();
+  const ext = (/\.([a-z0-9]{1,5})$/i.exec(fichier.name)?.[1] ?? 'bin').toLowerCase();
+  return `${dossierId}/${uid()}.${ext}`;
+}
 
 function ouvrir(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -16,6 +32,7 @@ function ouvrir(): Promise<IDBDatabase> {
 }
 
 export async function enregistrerFichier(id: string, fichier: Blob): Promise<void> {
+  if (MODE_EN_LIGNE) return (await enLigne()).televerser(id, fichier);
   const db = await ouvrir();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
@@ -26,6 +43,7 @@ export async function enregistrerFichier(id: string, fichier: Blob): Promise<voi
 }
 
 export async function lireFichier(id: string): Promise<Blob | undefined> {
+  if (MODE_EN_LIGNE) return (await enLigne()).telecharger(id);
   const db = await ouvrir();
   return new Promise((resolve, reject) => {
     const req = db.transaction(STORE).objectStore(STORE).get(id);
@@ -35,6 +53,18 @@ export async function lireFichier(id: string): Promise<Blob | undefined> {
 }
 
 export async function ouvrirFichier(id: string) {
+  if (MODE_EN_LIGNE) {
+    // La fenêtre est ouverte tout de suite (sinon le navigateur la bloque), puis reçoit l'URL signée.
+    const fenetre = window.open('about:blank', '_blank');
+    try {
+      const url = await (await enLigne()).urlSignee(id);
+      if (fenetre) fenetre.location.href = url; else window.location.assign(url);
+    } catch {
+      fenetre?.close();
+      alert("Ce fichier n'est pas accessible. Vérifiez la connexion Internet.");
+    }
+    return;
+  }
   const blob = await lireFichier(id);
   if (!blob) {
     alert("Ce fichier n'est pas disponible sur cet appareil (données de démonstration).");

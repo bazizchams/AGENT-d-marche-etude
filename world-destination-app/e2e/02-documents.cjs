@@ -1,6 +1,6 @@
 /** Documents : téléversement agent, envoi client, vérification, refus motivé. */
 const {
-  assert, url, re, connexion, deconnexion, creerClient, onglet, ligne, choisirFichier, toast, visible, attendre,
+  assert, aller, url, re, connexion, deconnexion, creerClient, onglet, ligne, choisirFichier, toast, visible, attendre,
 } = require('./lib.cjs');
 
 async function premierDocument(page) {
@@ -37,7 +37,7 @@ module.exports = [
 
       // Le client (non connecté) ouvre son espace et envoie un document
       await deconnexion(page);
-      await page.goto(url(`/espace/${id}`));
+      await aller(page, (`/espace/${id}`));
       await page.reload();
       await visible(page.getByRole('heading', { name: /Bonjour Walid/ }), 'l’espace client s’ouvre sans connexion du personnel');
       const li = page.getByRole('listitem').filter({ hasText: re(nomDoc) }).first();
@@ -69,13 +69,13 @@ module.exports = [
       await visible(row.getByText(/Motif : Photo floue/), 'motif affiché au personnel');
 
       // Le tableau de bord ne le liste plus
-      await page.goto(url('/'));
+      await aller(page, ('/'));
       assert.equal(await page.locator('section').filter({ has: page.getByRole('heading', { name: /Documents envoyés par les clients/ }) })
         .getByRole('listitem').filter({ hasText: /Walid CLIENT/ }).count(), 0, 'un document refusé n’est plus « à vérifier »');
 
       // Côté client : motif visible + renvoi possible
       await deconnexion(page);
-      await page.goto(url(`/espace/${id}`));
+      await aller(page, (`/espace/${id}`));
       await page.reload();
       const li2 = page.getByRole('listitem').filter({ hasText: re(nomDoc) }).first();
       await visible(li2.getByText('À renvoyer'), 'côté client : « À renvoyer »');
@@ -90,17 +90,17 @@ module.exports = [
       const id = await creerClient(page, { prenom: 'Sami', nom: 'Valide', telephone: '0554 00 00 33', type: 'Visa Schengen' });
       const nomDoc = await premierDocument(page);
       await deconnexion(page);
-      await page.goto(url(`/espace/${id}`));
+      await aller(page, (`/espace/${id}`));
       await page.reload();
       await choisirFichier(page, page.getByRole('listitem').filter({ hasText: re(nomDoc) }).first().getByRole('button', { name: /Envoyer/ }));
       await visible(page.getByText('Reçu, en vérification'), 'envoi client enregistré');
       await connexion(page, 'Agent Sara');
-      await page.goto(url(`/dossiers/${id}`));
+      await aller(page, (`/dossiers/${id}`));
       const row = ligne(page.getByRole('table'), nomDoc).first();
       await row.getByRole('button', { name: 'Valider' }).click();
       await visible(row.getByText('Validé'), 'document validé');
       await deconnexion(page);
-      await page.goto(url(`/espace/${id}`));
+      await aller(page, (`/espace/${id}`));
       await page.reload();
       await visible(page.getByRole('listitem').filter({ hasText: re(nomDoc) }).first().getByText('Validé'), 'côté client : « Validé »');
     },

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Icone } from '../components/Icone';
 import { Modale, Vide, tenter } from '../components/ui';
 import { date, formatSoldes, nomClient, soldes } from '../lib/regles';
 import { creerClient, ouvrirDossier, useBase, useUtilisateur } from '../lib/store';
@@ -13,7 +14,7 @@ export default function Clients() {
   const base = useBase();
   const nav = useNavigate();
   const [params, setParams] = useSearchParams();
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(() => params.get('q') ?? '');
   const nouveau = params.get('nouveau') === '1';
 
   const n = normaliser(q.trim());
@@ -32,18 +33,19 @@ export default function Clients() {
     <>
       <div className="entete">
         <div><h1>Clients</h1><div className="muted">{base.clients.length} clients</div></div>
-        <button className="btn-primaire" onClick={() => setParams({ nouveau: '1' })}>＋ Nouveau client</button>
+        <div className="actions"><button type="button" className="btn-primaire" onClick={() => setParams({ nouveau: '1' })}><Icone nom="plus" taille={16} /> Nouveau client</button></div>
       </div>
       <div className="carte">
         <div className="champ recherche">
           <label htmlFor="q">Rechercher</label>
-          <input id="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nom, téléphone ou n° de dossier" />
+          <div className="champ-recherche"><Icone nom="recherche" taille={16} /><input id="q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nom, téléphone ou n° de dossier" /></div>
         </div>
         {liste.length === 0 ? (
-          <Vide>{q ? <>Aucun client ne correspond à « {q} ». <button className="btn-petit" onClick={() => setQ('')}>Effacer la recherche</button></> : 'Aucun client pour le moment.'}</Vide>
+          q ? <Vide icone="recherche" action={<button type="button" className="btn-petit" onClick={() => setQ('')}>Effacer la recherche</button>}>Aucun client ne correspond à « {q} ». Vérifiez l'orthographe ou cherchez par téléphone.</Vide>
+          : <Vide icone="clients" action={<button type="button" className="btn-petit btn-primaire" onClick={() => setParams({ nouveau: '1' })}>Créer le premier client</button>}>Aucun client pour le moment.</Vide>
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className="table-cartes">
               <thead><tr><th>Client</th><th>Téléphone</th><th>Dossiers</th><th className="num">Reste à payer</th><th>Créé le</th></tr></thead>
               <tbody>
                 {liste.map((c) => {
@@ -57,11 +59,11 @@ export default function Clients() {
                   });
                   return (
                     <tr key={c.id} className="cliquable" onClick={() => nav(`/clients/${c.id}`)}>
-                      <td><Link to={`/clients/${c.id}`}><b>{nomClient(c)}</b></Link>{c.langue === 'ar' && <span className="badge b-gris" style={{ marginLeft: 6 }}>عربي</span>}</td>
-                      <td>{c.telephone}</td>
-                      <td className="petit">{ds.map((d) => base.modeles.find((m) => m.id === d.modeleId)?.nom).join(', ') || '—'}</td>
-                      <td className="num">{formatSoldes(reste, 'reste')}</td>
-                      <td className="petit muted">{date(c.creeLe)}</td>
+                      <td className="titre-ligne"><Link to={`/clients/${c.id}`}><b>{nomClient(c)}</b></Link>{c.langue === 'ar' && <span className="badge b-gris" lang="ar" style={{ marginLeft: 6 }} title="Langue : arabe">عربي</span>}</td>
+                      <td data-label="Téléphone" className="num" style={{ textAlign: 'left' }}>+{c.telephone}</td>
+                      <td data-label="Dossiers" className="petit">{ds.map((d) => base.modeles.find((m) => m.id === d.modeleId)?.nom).join(', ') || '—'}</td>
+                      <td data-label="Reste à payer" className="num">{formatSoldes(reste, 'reste')}</td>
+                      <td data-label="Créé le" className="petit muted">{date(c.creeLe)}</td>
                     </tr>
                   );
                 })}
@@ -74,6 +76,8 @@ export default function Clients() {
     </>
   );
 }
+
+const AUTO: Record<string, string | undefined> = { prenom: 'given-name', nom: 'family-name', telephone: 'tel', email: 'email', dateNaissance: 'bday', intitule: 'off' };
 
 function NouveauClient({ onFermer }: { onFermer: () => void }) {
   const base = useBase();
@@ -117,8 +121,8 @@ function NouveauClient({ onFermer }: { onFermer: () => void }) {
   const Champ = ({ k, lib, type = 'text', aide }: { k: keyof typeof f; lib: string; type?: string; aide?: string }) => (
     <div className="champ">
       <label htmlFor={k}>{lib}</label>
-      <input id={k} type={type} value={f[k]} onChange={set(k)} onBlur={() => setTouche({ ...touche, [k]: true })} aria-invalid={!!(touche[k] && erreurs[k])} />
-      {touche[k] && erreurs[k] ? <div className="erreur">{erreurs[k]}</div> : aide ? <div className="petit muted">{aide}</div> : null}
+      <input id={k} type={type} value={f[k]} onChange={set(k)} onBlur={() => setTouche({ ...touche, [k]: true })} aria-invalid={!!(touche[k] && erreurs[k])} aria-describedby={(touche[k] && erreurs[k]) || aide ? `${k}-msg` : undefined} autoComplete={AUTO[k]} />
+      {touche[k] && erreurs[k] ? <div className="erreur" id={`${k}-msg`}>{erreurs[k]}</div> : aide ? <div className="aide" id={`${k}-msg`}>{aide}</div> : null}
     </div>
   );
 
@@ -139,7 +143,7 @@ function NouveauClient({ onFermer }: { onFermer: () => void }) {
             </select>
           </div>
         </div>
-        {doublon && <div className="alerte alerte-orange">Un client avec ce numéro existe déjà : <Link to={`/clients/${doublon.id}`} onClick={onFermer}>{nomClient(doublon)}</Link>. Pour un nouveau dossier, ouvrez-le depuis sa fiche.</div>}
+        {doublon && <div className="alerte alerte-orange"><Icone nom="alerte" /><div>Un client avec ce numéro existe déjà : <Link to={`/clients/${doublon.id}`} onClick={onFermer}>{nomClient(doublon)}</Link>. Pour un nouveau dossier, ouvrez-le depuis sa fiche.</div></div>}
         <h3 style={{ marginTop: 8 }}>Premier dossier</h3>
         <div className="grille g2" style={{ gap: '0 16px' }}>
           <div className="champ">

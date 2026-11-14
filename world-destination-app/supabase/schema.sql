@@ -248,7 +248,9 @@ revoke execute on function total_paye(text, uuid) from public, anon;
 
 create or replace function format_montant(p numeric, p_devise text) returns text
 language sql immutable as
-$$ select trim(to_char(p, 'FM999G999G999G990D99')) || ' ' || case p_devise when 'DZD' then 'DA' when 'EUR' then '€' else '$ CA' end $$;
+-- Format français (37 000 DA, 12,50 €), indépendant des réglages régionaux du serveur.
+$$ select translate(to_char(p, case when p = trunc(p) then 'FM999,999,999,990' else 'FM999,999,999,990.00' end), ',.', ' ,')
+     || ' ' || case p_devise when 'DZD' then 'DA' when 'EUR' then '€' else '$ CA' end $$;
 
 -- ------------------------------------------------------------------ Triggers : comptes
 

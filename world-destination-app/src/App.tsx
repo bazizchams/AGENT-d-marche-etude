@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Icone } from './components/Icone';
+import type { NomIcone } from './components/Icone';
 import { ZoneToast } from './components/ui';
 import { deconnexion, useUtilisateur } from './lib/store';
 import Caisse from './pages/Caisse';
@@ -13,41 +15,49 @@ import Parametres from './pages/Parametres';
 import Recu from './pages/Recu';
 import TableauDeBord from './pages/TableauDeBord';
 
+type Destination = { to: string; lib: string; court: string; icone: NomIcone; admin?: boolean };
+const DESTINATIONS: Destination[] = [
+  { to: '/', lib: 'Tableau de bord', court: 'Accueil', icone: 'accueil' },
+  { to: '/clients', lib: 'Clients', court: 'Clients', icone: 'clients' },
+  { to: '/dossiers', lib: 'Dossiers', court: 'Dossiers', icone: 'dossier' },
+  { to: '/caisse', lib: 'Caisse', court: 'Caisse', icone: 'caisse', admin: true },
+  { to: '/parametres', lib: 'Paramètres', court: 'Réglages', icone: 'reglages', admin: true },
+];
+
 function Coquille() {
   const user = useUtilisateur();
-  const [menu, setMenu] = useState(false);
   const loc = useLocation();
+  // Revient en haut de page et place le focus sur le contenu à chaque changement d'écran.
+  useEffect(() => { window.scrollTo(0, 0); }, [loc.pathname]);
   if (loc.pathname.startsWith('/espace/')) return <Routes><Route path="/espace/:id" element={<EspaceClient />} /></Routes>;
   if (!user) return <Connexion />;
   const admin = user.role === 'admin';
-  const fermer = () => setMenu(false);
+  const liens = DESTINATIONS.filter((d) => !d.admin || admin);
   return (
     <div className="app">
-      <div className="topbar-mobile no-print">
-        <button aria-label="Ouvrir le menu" onClick={() => setMenu(true)}>☰</button>
+      <a className="lien-evitement" href="#contenu" onClick={(e) => { e.preventDefault(); document.getElementById('contenu')?.focus(); }}>Aller au contenu</a>
+      <header className="topbar-mobile no-print">
         <img src="./logo.png" alt="" />
         <b>World Destination</b>
-      </div>
-      {menu && <div className="voile" onClick={fermer} />}
-      <aside className={`sidebar no-print ${menu ? 'ouverte' : ''}`}>
+        <button type="button" onClick={deconnexion} aria-label={`Se déconnecter (${user.nom})`} title="Se déconnecter"><Icone nom="sortie" taille={22} /></button>
+      </header>
+      <aside className="sidebar no-print">
         <div className="marque">
           <img src="./logo.png" alt="Logo World Destination" />
           <div><b>World Destination</b><span>Gestion des dossiers</span></div>
         </div>
-        <nav className="nav" onClick={fermer}>
-          <NavLink to="/" end>🏠 Tableau de bord</NavLink>
-          <NavLink to="/clients">👥 Clients</NavLink>
-          <NavLink to="/dossiers">📁 Dossiers</NavLink>
-          {admin && <NavLink to="/caisse">💰 Caisse</NavLink>}
-          {admin && <NavLink to="/parametres">⚙️ Paramètres</NavLink>}
+        <nav className="nav" aria-label="Navigation principale">
+          {liens.map((d) => (
+            <NavLink key={d.to} to={d.to} end={d.to === '/'}><Icone nom={d.icone} /> {d.lib}</NavLink>
+          ))}
         </nav>
         <div className="bas">
           <div><b>{user.nom}</b></div>
-          <div style={{ opacity: .8 }}>{admin ? 'Administrateur' : 'Agent'}</div>
-          <button onClick={deconnexion}>Se déconnecter</button>
+          <div className="role">{admin ? 'Administrateur' : 'Agent'}</div>
+          <button type="button" onClick={deconnexion}><Icone nom="sortie" taille={16} /> Se déconnecter</button>
         </div>
       </aside>
-      <main className="contenu">
+      <main className="contenu" id="contenu" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<TableauDeBord />} />
           <Route path="/clients" element={<Clients />} />
@@ -60,6 +70,11 @@ function Coquille() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
+      <nav className="barre-onglets no-print" aria-label="Navigation principale (mobile)">
+        {liens.map((d) => (
+          <NavLink key={d.to} to={d.to} end={d.to === '/'} aria-label={d.court === d.lib ? undefined : `${d.court} – ${d.lib}`}><Icone nom={d.icone} /><span>{d.court}</span></NavLink>
+        ))}
+      </nav>
     </div>
   );
 }

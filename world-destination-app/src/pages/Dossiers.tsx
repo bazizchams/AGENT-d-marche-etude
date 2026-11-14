@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Icone } from '../components/Icone';
 import { Barre, BadgeDossier, Vide } from '../components/ui';
 import { compteDocuments, impayesExigibles, nomClient, progression } from '../lib/regles';
 import { useBase } from '../lib/store';
@@ -32,7 +33,7 @@ export default function Dossiers() {
       <div className="entete"><div><h1>Dossiers</h1><div className="muted">{liste.length} dossier(s) affiché(s)</div></div></div>
       <div className="carte">
         <div className="grille g4" style={{ gap: 12, marginBottom: 8 }}>
-          <div className="champ"><label htmlFor="q">Rechercher</label><input id="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="N°, client…" /></div>
+          <div className="champ"><label htmlFor="q">Rechercher</label><div className="champ-recherche"><Icone nom="recherche" taille={16} /><input id="q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="N°, client…" /></div></div>
           <div className="champ"><label htmlFor="t">Type</label>
             <select id="t" value={type} onChange={(e) => filtre('type', e.target.value)}>
               <option value="">Tous les types</option>
@@ -51,9 +52,9 @@ export default function Dossiers() {
             </select>
           </div>
         </div>
-        {liste.length === 0 ? <Vide>Aucun dossier ne correspond à ces filtres. <button className="btn-petit" onClick={() => { setQ(''); setParams({}, { replace: true }); }}>Réinitialiser les filtres</button></Vide> : (
+        {liste.length === 0 ? <Vide icone="recherche" action={<button type="button" className="btn-petit" onClick={() => { setQ(''); setParams({}, { replace: true }); }}>Réinitialiser les filtres</button>}>Aucun dossier ne correspond à ces filtres.</Vide> : (
           <div className="table-scroll">
-            <table>
+            <table className="table-cartes">
               <thead><tr><th>Dossier</th><th>Client</th><th>Type</th><th>Étape en cours</th><th style={{ width: 140 }}>Avancement</th><th>Documents</th><th>Paiement</th><th>Statut</th></tr></thead>
               <tbody>
                 {liste.map((d) => {
@@ -63,18 +64,18 @@ export default function Dossiers() {
                   const m = base.modeles.find((x) => x.id === d.modeleId);
                   return (
                     <tr key={d.id} className="cliquable" onClick={() => nav(`/dossiers/${d.id}`)}>
-                      <td><Link to={`/dossiers/${d.id}`}>{d.numero}</Link></td>
-                      <td>{nomClient(client(d.clientId))}</td>
-                      <td className="petit"><span className="pastille" style={{ background: m?.couleur }} /> {m?.nom}</td>
-                      <td className="petit">{p.courante?.nom ?? '—'}</td>
-                      <td><Barre pourcent={p.pourcent} /><span className="petit muted">{p.faites}/{p.total}</span></td>
-                      <td className="petit">
-                        {docs.valide}/{d.documents.length} ✅
+                      <td className="titre-ligne"><Link to={`/dossiers/${d.id}`}>{d.numero}</Link> <span className="muted petit client-mobile" aria-hidden="true">· {nomClient(client(d.clientId))}</span></td>
+                      <td data-label="Client" className="col-client">{nomClient(client(d.clientId))}</td>
+                      <td data-label="Type" className="petit"><span className="avec-pastille"><span className="pastille" style={{ background: m?.couleur }} />{m?.nom}</span></td>
+                      <td data-label="Étape" className="petit">{p.courante?.nom ?? '—'}</td>
+                      <td data-label="Avancement" className="cellule-avancement"><div><Barre pourcent={p.pourcent} /><span className="petit muted">{p.faites}/{p.total}</span></div></td>
+                      <td data-label="Documents" className="petit">
+                        <span className="avec-pastille" style={{ gap: 4 }}><Icone nom="coche" taille={14} />{docs.valide}/{d.documents.length}</span>
                         {docs.envoye > 0 && <span className="badge b-bleu" style={{ marginLeft: 4 }}>{docs.envoye} à vérifier</span>}
                         {docs.refuse > 0 && <span className="badge b-rouge" style={{ marginLeft: 4 }}>{docs.refuse} refusé</span>}
                       </td>
-                      <td>{imp.length ? <span className="badge b-orange">Impayé</span> : <span className="badge b-vert">À jour</span>}</td>
-                      <td><BadgeDossier statut={d.statut} /></td>
+                      <td data-label="Paiement">{imp.length ? <span className="badge b-orange">Impayé</span> : <span className="badge b-vert">À jour</span>}</td>
+                      <td data-label="Statut"><BadgeDossier statut={d.statut} /></td>
                     </tr>
                   );
                 })}

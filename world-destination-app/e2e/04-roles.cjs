@@ -1,11 +1,11 @@
 /** Rôles : l'agent n'a ni Caisse ni Paramètres ; seul un admin annule un paiement (avec motif). */
 const {
-  assert, url, re, connexion, menu, visible, absent, attendre, ligne, onglet,
+  assert, aller, url, re, connexion, menu, visible, absent, attendre, ligne, onglet,
 } = require('./lib.cjs');
 
 /** Ouvre le dossier de démo de Yacine BENALI (paiements déjà présents). */
 async function dossierYacine(page) {
-  await page.goto(url('/dossiers'));
+  await aller(page, ('/dossiers'));
   await page.getByLabel('Rechercher').fill('Benali');
   await page.getByRole('link', { name: /^WD-/ }).first().click();
   await page.waitForURL(/#\/dossiers\/[^/?]+/);
@@ -25,7 +25,7 @@ module.exports = [
       assert.equal(await menu(page, 'Caisse').count(), 0, 'pas de lien « Caisse » pour un agent');
       assert.equal(await menu(page, 'Paramètres').count(), 0, 'pas de lien « Paramètres » pour un agent');
       for (const chemin of ['/caisse', '/parametres']) {
-        await page.goto(url(chemin));
+        await aller(page, (chemin));
         await page.reload();
         await attendre(async () => !page.url().includes(chemin), `accès direct à ${chemin} : l'agent doit être redirigé`);
         await absent(page.getByRole('heading', { name: /^(Caisse|Paramètres)$/ }), `${chemin} : écran réservé non affiché`);
@@ -68,6 +68,7 @@ module.exports = [
 
       await dossierYacine(page);
       const h = historique(page);
+      await h.getByRole('row').nth(1).waitFor();
       const nbAvant = await h.getByRole('row').count();
       const row = h.getByRole('row').filter({ has: page.getByRole('button', { name: /^Annuler$/ }) }).first();
       const numero = (await row.getByRole('cell').first().textContent()).trim();

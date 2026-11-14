@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Icone } from '../components/Icone';
 import { Vide } from '../components/ui';
 import { dateHeure, montant, nomClient } from '../lib/regles';
 import { useBase } from '../lib/store';
@@ -45,30 +46,30 @@ export default function Caisse() {
         </div>
       </div>
       <div className="grille g3" style={{ marginBottom: 16 }}>
-        <div className="carte"><div className="petit muted">Honoraires encaissés</div><div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{totaux('echeance')}</div></div>
-        <div className="carte"><div className="petit muted">Frais de procédure encaissés</div><div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{totaux('frais')}</div><div className="petit muted">À reverser aux organismes</div></div>
-        <div className="carte"><div className="petit muted">Par mode (DA)</div>
-          {Object.keys(parMode).length === 0 ? <div>—</div> : Object.entries(parMode).map(([k, v]) => <div key={k} className="petit">{MODES[k as keyof typeof MODES]} : <b>{montant(v, 'DZD')}</b></div>)}
+        <div className="carte kpi ton-neutre"><span className="kpi-icone"><Icone nom="caisse" /></span><div><div className="lib">Honoraires encaissés</div><div className="val" style={{ fontSize: '1.4rem' }}>{totaux('echeance')}</div></div></div>
+        <div className="carte kpi"><span className="kpi-icone"><Icone nom="banque" /></span><div><div className="lib">Frais de procédure encaissés</div><div className="val" style={{ fontSize: '1.4rem' }}>{totaux('frais')}</div><div className="petit muted">À reverser aux organismes</div></div></div>
+        <div className="carte"><div className="petit muted">Par mode de paiement (DA)</div>
+          {Object.keys(parMode).length === 0 ? <div>—</div> : <ul className="liste-simple">{Object.entries(parMode).map(([k, v]) => <li key={k} className="petit" style={{ padding: '6px 0' }}><span>{MODES[k as keyof typeof MODES]}</span><b className="num">{montant(v, 'DZD')}</b></li>)}</ul>}
         </div>
       </div>
       <div className="carte">
-        {lignes.length === 0 ? <Vide>Aucun encaissement sur cette période.</Vide> : (
+        {lignes.length === 0 ? <Vide icone="recu" action={<button type="button" className="btn-petit" onClick={() => { setDu('2000-01-01'); setAu(aujourdhui()); setType('tous'); }}>Afficher toute la période</button>}>Aucun encaissement sur cette période.</Vide> : (
           <div className="table-scroll">
-            <table>
+            <table className="table-cartes">
               <thead><tr><th>Reçu</th><th>Date</th><th>Client</th><th>Objet</th><th>Mode</th><th className="num">Montant</th><th>Par</th></tr></thead>
               <tbody>
                 {lignes.map(({ d, p }) => {
                   const c = base.clients.find((x) => x.id === d.clientId);
                   const obj = p.cible.type === 'echeance' ? d.echeances.find((e) => e.id === p.cible.id)?.libelle : d.frais.find((f) => f.id === p.cible.id)?.nom;
                   return (
-                    <tr key={p.id} style={p.annule ? { opacity: .5 } : undefined}>
-                      <td><Link to={`/dossiers/${d.id}/recu/${p.id}`}>{p.numeroRecu}</Link></td>
-                      <td className="petit">{dateHeure(p.date)}</td>
-                      <td><Link to={`/dossiers/${d.id}?onglet=paiements`}>{nomClient(c)}</Link></td>
-                      <td className="petit">{obj}{p.annule && <div style={{ color: 'var(--rouge)' }}>Annulé : {p.annule.motif}</div>}</td>
-                      <td className="petit">{MODES[p.mode]}</td>
-                      <td className="num" style={p.annule ? { textDecoration: 'line-through' } : undefined}>{montant(p.montant, p.devise)}</td>
-                      <td className="petit">{base.utilisateurs.find((u) => u.id === p.par)?.nom}</td>
+                    <tr key={p.id} className={p.annule ? 'annule' : undefined}>
+                      <td className="titre-ligne"><Link to={`/dossiers/${d.id}/recu/${p.id}`}>{p.numeroRecu}</Link></td>
+                      <td data-label="Date" className="petit">{dateHeure(p.date)}</td>
+                      <td data-label="Client"><Link to={`/dossiers/${d.id}?onglet=paiements`}>{nomClient(c)}</Link></td>
+                      <td data-label="Objet" className="petit">{obj}{p.annule && <div style={{ color: 'var(--rouge)' }}>Annulé : {p.annule.motif}</div>}</td>
+                      <td data-label="Mode" className="petit">{MODES[p.mode]}</td>
+                      <td data-label="Montant" className="num" style={p.annule ? { textDecoration: 'line-through' } : undefined}>{montant(p.montant, p.devise)}</td>
+                      <td data-label="Par" className="petit">{base.utilisateurs.find((u) => u.id === p.par)?.nom}</td>
                     </tr>
                   );
                 })}

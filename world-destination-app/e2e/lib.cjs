@@ -38,14 +38,21 @@ async function nouvellePage(browser, { mobile = false } = {}) {
   return { context, page, erreurs };
 }
 
+/** Navigation interne (HashRouter) : page.goto ne suit pas toujours un simple changement de hash. */
+async function aller(page, hash) {
+  await page.evaluate((h) => { window.location.hash = h; }, `#${hash}`);
+  // pas d'attente stricte sur le hash : l'application peut rediriger (ex. /caisse pour un agent)
+  await page.waitForTimeout(120);
+}
+
 /** Recharge la page (le store relit le localStorage). */
 async function recharger(page, hash) {
-  if (hash !== undefined) await page.goto(url(hash));
+  if (hash !== undefined) await aller(page, hash);
   await page.reload();
 }
 
 async function connexion(page, nom) {
-  await page.goto(url('/'));
+  await aller(page, ('/'));
   await page.getByRole('button', { name: re(nom) }).first().click();
   await page.getByRole('heading', { name: re(`Bonjour ${nom}`) }).waitFor();
 }
@@ -64,7 +71,7 @@ function menu(page, nom) {
  * Crée un client via le formulaire « Nouveau client ». Renvoie l'id du dossier (ou null).
  */
 async function creerClient(page, { prenom, nom, telephone, email = '', type = 'Campus France', langue } = {}) {
-  await page.goto(url('/clients?nouveau=1'));
+  await aller(page, ('/clients?nouveau=1'));
   const dlg = page.getByRole('dialog', { name: 'Nouveau client' });
   await dlg.waitFor();
   await dlg.getByLabel('Prénom', { exact: true }).fill(prenom);
@@ -86,7 +93,10 @@ function idDossier(page) {
 }
 
 async function onglet(page, nom) {
-  await page.getByRole('tab', { name: re(nom) }).click();
+  const tab = page.getByRole('tab', { name: re(nom) }).first();
+  await tab.click();
+  await attendre(async () => (await tab.getAttribute('aria-selected')) === 'true', `onglet « ${nom} » sélectionné`);
+  await page.waitForTimeout(150);
 }
 
 /** Ligne de tableau (ou élément de liste) contenant un texte. */
@@ -159,6 +169,6 @@ async function absent(loc, message) {
 }
 
 module.exports = {
-  assert, BASE, url, re, reMontant, nouvellePage, recharger, connexion, deconnexion, menu, creerClient, idDossier,
+  assert, BASE, url, aller, re, reMontant, nouvellePage, recharger, connexion, deconnexion, menu, creerClient, idDossier,
   onglet, ligne, choisirFichier, toast, verifierLargeur, attendre, visible, absent,
 };

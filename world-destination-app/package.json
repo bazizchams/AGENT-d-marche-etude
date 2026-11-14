@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "e2e": "node e2e/run.cjs"
+    "e2e": "node e2e/run.cjs",
+    "seed": "node supabase/generer-seed.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
