@@ -34,10 +34,10 @@ export function creerDossier(
     statut: 'en_cours',
     ouvertLe: maintenant(),
     documents: modele.documents.map((d) => ({
-      id: uid(), nom: d.nom, statut: 'manquant', avecExpiration: d.avecExpiration,
+      id: uid(), nom: d.nom, ...(d.nomAr ? { nomAr: d.nomAr } : {}), statut: 'manquant', avecExpiration: d.avecExpiration,
     })),
     frais: modele.frais.map((f) => ({
-      id: uid(), nom: f.nom, organisme: f.organisme, montant: f.montant, devise: f.devise, verse: false,
+      id: uid(), nom: f.nom, ...(f.nomAr ? { nomAr: f.nomAr } : {}), organisme: f.organisme, montant: f.montant, devise: f.devise, verse: false,
     })),
     etapes: [],
     echeances: [
@@ -50,7 +50,7 @@ export function creerDossier(
   // Les étapes référencent les frais du modèle : on traduit vers les identifiants du dossier.
   const correspondance = new Map(modele.frais.map((f, i) => [f.id, dossier.frais[i].id]));
   dossier.etapes = modele.etapes.map((e) => ({
-    id: uid(), nom: e.nom, faite: false,
+    id: uid(), nom: e.nom, ...(e.nomAr ? { nomAr: e.nomAr } : {}), faite: false,
     fraisRequis: e.fraisRequis.map((id) => correspondance.get(id)).filter((x): x is string => !!x),
   }));
   return dossier;

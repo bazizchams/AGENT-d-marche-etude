@@ -31,12 +31,16 @@ export interface Client {
 export interface ModeleDocument {
   id: string;
   nom: string;
+  /** Libellé en arabe (espace client, messages). Repli sur `nom` si absent. */
+  nomAr?: string;
   avecExpiration: boolean;
 }
 
 export interface ModeleFrais {
   id: string;
   nom: string;
+  /** Libellé en arabe (espace client, messages). Repli sur `nom` si absent. */
+  nomAr?: string;
   organisme: string;
   montant: number;
   devise: Devise;
@@ -45,6 +49,8 @@ export interface ModeleFrais {
 export interface ModeleEtape {
   id: string;
   nom: string;
+  /** Libellé en arabe (espace client, messages). Repli sur `nom` si absent. */
+  nomAr?: string;
   /** Frais qui doivent être encaissés à 100 % avant de valider l'étape */
   fraisRequis: string[];
 }
@@ -68,6 +74,8 @@ export type StatutDocument = 'manquant' | 'envoye' | 'valide' | 'refuse';
 export interface DocumentDossier {
   id: string;
   nom: string;
+  /** Libellé en arabe (espace client, messages). Repli sur `nom` si absent. */
+  nomAr?: string;
   statut: StatutDocument;
   avecExpiration: boolean;
   expiration?: string;
@@ -82,6 +90,8 @@ export interface DocumentDossier {
 export interface EtapeDossier {
   id: string;
   nom: string;
+  /** Libellé en arabe (espace client, messages). Repli sur `nom` si absent. */
+  nomAr?: string;
   fraisRequis: string[];
   faite: boolean;
   faiteLe?: string;
@@ -99,6 +109,8 @@ export interface Echeance {
 export interface FraisDossier {
   id: string;
   nom: string;
+  /** Libellé en arabe (espace client, messages). Repli sur `nom` si absent. */
+  nomAr?: string;
   organisme: string;
   montant: number;
   devise: Devise;
@@ -129,6 +141,8 @@ export interface Evenement {
   par: string;
   type: TypeEvenement;
   texte: string;
+  /** Version arabe du texte, affichée au client arabophone (sinon libellé générique selon `type`). */
+  texteAr?: string;
   interne?: boolean;
 }
 
