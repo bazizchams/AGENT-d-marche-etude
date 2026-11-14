@@ -882,7 +882,8 @@ create or replace function purger_dossier(p_dossier uuid, p_anonymiser boolean d
 language plpgsql volatile security definer set search_path = public as $$
 declare v_n int; v_client uuid;
 begin
-  if not est_admin() then raise exception 'Seul un administrateur peut purger un dossier.'; end if;
+  -- auth.uid() nul = éditeur SQL de Supabase (propriétaire du projet) : autorisé.
+  if auth.uid() is not null and not est_admin() then raise exception 'Seul un administrateur peut purger un dossier.'; end if;
   select client_id into v_client from dossiers where id = p_dossier;
   if v_client is null then raise exception 'Dossier introuvable.'; end if;
   -- Effacement direct des objets si l'instance l'autorise (sinon déjà fait par l'API Storage).

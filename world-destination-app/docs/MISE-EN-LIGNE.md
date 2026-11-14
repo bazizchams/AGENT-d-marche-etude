@@ -178,6 +178,9 @@ from acces_documents a left join profils p on p.id = a.par left join documents d
 order by a.le desc limit 200;
 ```
 - **Fin de conservation** (6 à 12 mois après la clôture, ou à la demande du client) : un administrateur **purge** le dossier. Les fichiers (passeport, casier, examens…) sont effacés et la fiche peut être anonymisée. Les paiements, les reçus et le journal sont conservés (comptabilité). Aucun dossier ne peut être supprimé autrement.
+  Tant que le bouton « Purger » n'est pas dans l'application, procédez ainsi :
+  1. **Storage › documents** : ouvrez le dossier qui porte le numéro interne du dossier (l'identifiant visible dans l'adresse `#/dossiers/<identifiant>`), sélectionnez tous les fichiers et cliquez sur **Delete** ;
+  2. **SQL Editor** : `select purger_dossier('<identifiant>', true);`. Mettez `false` au lieu de `true` pour garder la fiche client sans l'anonymiser.
 - **Montants** : une fois le dossier ouvert, seuls les administrateurs peuvent modifier un montant, une devise ou les frais requis d'une étape. Chaque modification est notée au journal.
 - **Agents** : un agent voit le détail des paiements (dates, reçus) des dossiers dont il a la charge et de ceux qu'il a encaissés. Pour les autres, il voit seulement ce qui reste à payer.
 - **Lien de l'espace client** : le lien envoyé par WhatsApp ou imprimé sur le reçu (QR code) ne contient aucun mot de passe. Le client doit toujours se connecter avec son e-mail. Ne transférez jamais un e-mail de connexion reçu par un client.
