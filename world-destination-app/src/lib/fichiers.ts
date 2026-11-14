@@ -77,4 +77,8 @@ export async function ouvrirFichier(id: string) {
 }
 
 export const TAILLE_MAX = 10 * 1024 * 1024; // 10 Mo
-export const TYPES_ACCEPTES = 'application/pdf,image/*';
+/** Liste fermée (pas de SVG ni de HTML, qui pourraient contenir du script). */
+export const TYPES_ACCEPTES = 'application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif';
+const TYPES_OK = new Set(TYPES_ACCEPTES.split(','));
+/** Vrai si le fichier est d'un type autorisé (le sélecteur peut être contourné). */
+export const typeAutorise = (f: { type: string }) => TYPES_OK.has(f.type);

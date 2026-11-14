@@ -17,7 +17,8 @@ import type {
   Base, Client, Dossier, ModeleDossier, ModePaiement, Paiement, ParametresAgence, StatutDossier, Utilisateur,
 } from './types';
 
-const CLE = 'wd-base-v1';
+/** v2 : modèles vérifiés (23 types, noms arabes). Les anciennes données de démo sont remplacées. */
+const CLE = 'wd-base-v2';
 const CLE_SESSION = 'wd-session';
 
 /** Vrai quand l'application fonctionne avec Supabase (version en ligne). */
@@ -32,6 +33,7 @@ const moduleEnLigne = () => {
 
 function charger(): Base {
   if (MODE_EN_LIGNE) return baseVide(); // remplie après la connexion
+  try { localStorage.removeItem('wd-base-v1'); } catch { /* ignore */ }
   try {
     const brut = localStorage.getItem(CLE);
     if (brut) return JSON.parse(brut) as Base;

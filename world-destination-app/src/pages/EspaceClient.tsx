@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Barre, notifier, tenter } from '../components/ui';
-import { TAILLE_MAX, TYPES_ACCEPTES } from '../lib/fichiers';
+import { TAILLE_MAX, TYPES_ACCEPTES, typeAutorise } from '../lib/fichiers';
 import { echeanceExigible, montant, progression, resteEcheance, resteFrais } from '../lib/regles';
 import { modeEnLigne, televerserParClient, useBase, useUtilisateur } from '../lib/store';
 import EcranConnexion from '../lib/supabase/EcranConnexion';
@@ -109,7 +109,7 @@ export default function EspaceClient() {
     const f = e.target.files?.[0];
     e.target.value = '';
     if (!f) return;
-    if (f.size > TAILLE_MAX) { notifier(t.aide, true); return; }
+    if (!typeAutorise(f) || f.size > TAILLE_MAX) { notifier(t.aide, true); return; }
     await tenter(() => televerserParClient(d.id, cible.current, f), t.envoye);
   };
 

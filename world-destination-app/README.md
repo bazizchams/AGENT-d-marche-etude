@@ -13,9 +13,16 @@ Cahier des charges : `../docs/world-destination-gestion/cahier-des-charges.md`
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # tests des règles métier
+npm test           # tests unitaires (vitest)
+npm run e2e        # 19 scénarios dans un vrai navigateur (Playwright)
 npm run build      # version à héberger (dossier dist/)
+npm run seed       # régénère supabase/seed.sql depuis src/lib/modeles.ts
+bash supabase/tests/lancer.sh   # 89 vérifications de sécurité SQL (PostgreSQL local)
 ```
+
+## Version en ligne
+Guide pas à pas : `docs/MISE-EN-LIGNE.md` (Supabase + Vercel). Revue de sécurité : `../docs/world-destination-gestion/revue-securite.md`.
+Tant que `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` ne sont pas définies, l'application reste en mode démonstration (bandeau rouge).
 
 ## Installer comme logiciel
 Ouvrez l'application dans Chrome ou Edge, puis cliquez sur l'icône « Installer » dans la barre d'adresse. Le logiciel apparaît dans le menu Démarrer de Windows. Sur Android et iPhone, utilisez « Ajouter à l'écran d'accueil ».
@@ -29,7 +36,7 @@ Ouvrez l'application dans Chrome ou Edge, puis cliquez sur l'icône « Installer
 
 ## Structure
 - `src/lib/regles.ts` : règles de calcul (testées dans `regles.test.ts`)
-- `src/lib/modeles.ts` : modèles des 5 types de dossiers (montants donnés à titre d'exemple)
+- `src/lib/modeles.ts` : 23 types de dossiers vérifiés (sources en commentaire ; honoraires = exemples)
 - `src/lib/store.ts` : accès aux données (à remplacer par Supabase)
 - `src/lib/messages.ts` : messages WhatsApp et e-mail en français et en arabe
 - `src/pages/` : écrans

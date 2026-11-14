@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Icone, type NomIcone } from '../components/Icone';
 import { BadgeDoc, BadgeDossier, Barre, Modale, Onglets, Vide, notifier, tenter } from '../components/ui';
-import { ouvrirFichier, TAILLE_MAX, TYPES_ACCEPTES } from '../lib/fichiers';
+import { ouvrirFichier, TAILLE_MAX, TYPES_ACCEPTES, typeAutorise } from '../lib/fichiers';
 import { LIBELLES_MESSAGES, lienEspaceClient, lienWhatsApp, rediger, type TypeMessage } from '../lib/messages';
 import {
   compteDocuments, date, dateHeure, echeanceExigible, formatSoldes, fraisBloquants, joursAvant, montant, nomClient,
@@ -127,6 +127,7 @@ function OngletDocuments({ d }: { d: Dossier }) {
     const f = e.target.files?.[0];
     e.target.value = '';
     if (!f) return;
+    if (!typeAutorise(f)) { notifier('Format non accepté : envoyez un PDF ou une photo (JPEG, PNG, WebP, HEIC).', true); return; }
     if (f.size > TAILLE_MAX) { notifier('Fichier trop lourd (10 Mo maximum). Réduisez la qualité du scan ou de la photo.', true); return; }
     await tenter(() => televerserDocument(d.id, cible.current, f), 'Document téléversé et validé');
   };
