@@ -99,14 +99,24 @@ module.exports = [
       await visible(bloque, 'étape « Test de français » signalée comme bloquée');
       assert.ok(await bloque.isDisabled(), 'le bouton de l’étape bloquée est désactivé');
 
+      // Frais requis par l'étape : lu sur le badge de l'étape (« Test de français – TCF SO »…)
+      const nomFrais = (await etape.locator('span').filter({ hasText: /Test/ }).last().textContent()).replace(/^[^A-Za-zÀ-ÿ]+/, '').trim();
+      assert.ok(nomFrais, 'le frais requis est affiché sur l’étape');
+      await onglet(page, 'Paiements');
+      const rowFrais = ligne(page, nomFrais).filter({ has: page.getByRole('button', { name: 'Encaisser' }) }).first();
+      await rowFrais.getByRole('button', { name: 'Encaisser' }).click();
+      let dlg = page.getByRole('dialog', { name: /^Encaisser/ });
+      const total = Number((await dlg.getByLabel(/Montant reçu/).inputValue()).replace(/\s/g, ''));
+      assert.ok(total > 1, `montant du frais lu dans la modale (${total})`);
       // Paiement partiel : toujours bloquée
-      const r = await encaisser(page, 'Test TCF', 16999);
-      await fermer(r.ok);
+      await dlg.getByLabel(/Montant reçu/).fill(String(total - 1));
+      await dlg.getByRole('button', { name: /Enregistrer l'encaissement/ }).click();
+      await fermer(page.getByRole('dialog', { name: 'Encaissement enregistré' }));
       await onglet(page, 'Étapes');
       assert.ok(await etape.getByRole('button', { name: /Frais non encaissés/ }).isDisabled(), 'toujours bloquée après un paiement partiel');
 
       // Solde : débloquée
-      const r2 = await encaisser(page, 'Test TCF', 1);
+      const r2 = await encaisser(page, nomFrais, 1);
       await fermer(r2.ok);
       await onglet(page, 'Étapes');
       const faire = etape.getByRole('button', { name: 'Marquer comme faite' });

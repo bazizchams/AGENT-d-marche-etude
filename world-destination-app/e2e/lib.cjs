@@ -80,7 +80,14 @@ async function creerClient(page, { prenom, nom, telephone, email = '', type = 'C
   await dlg.getByLabel(/^Téléphone/).fill(telephone);
   if (email) await dlg.getByLabel(/^E-mail/).fill(email);
   if (langue) await dlg.getByLabel(/Langue/).selectOption(langue);
-  if (type) await dlg.getByLabel('Type de dossier').selectOption({ label: type });
+  if (type) {
+    // Libellé exact, sinon premier type qui commence par ce libellé (ex. « Visa Schengen – France »).
+    const select = dlg.getByLabel('Type de dossier');
+    const libelles = (await select.locator('option').allTextContents()).map((x) => x.trim());
+    const choix = libelles.find((x) => x === type) ?? libelles.find((x) => x.startsWith(type));
+    if (!choix) throw new Error(`Type de dossier introuvable : « ${type} » (disponibles : ${libelles.join(', ')})`);
+    await select.selectOption({ label: choix });
+  }
   else await dlg.getByLabel('Type de dossier').selectOption('');
   await dlg.getByRole('button', { name: /^Créer le client/ }).click();
   if (!type) { await page.waitForURL(/#\/clients\/[^?]+$/); return null; }
