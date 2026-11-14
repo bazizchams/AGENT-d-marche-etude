@@ -486,7 +486,13 @@ tr.annule td { color: var(--c-texte-2); }
 }
 .menu-deroulant .menu-liste button { width: 100%; border: 0; justify-content: flex-start; min-height: var(--hauteur-cible); font-weight: var(--graisse-normale); }
 .menu-deroulant .menu-liste button:hover, .menu-deroulant .menu-liste button:focus-visible { background: var(--c-survol); }
-@media (max-width: 640px) { .menu-deroulant .menu-liste { left: 0; right: auto; transform-origin: top left; } }
+/* Sur téléphone : feuille d'actions ancrée au-dessus de la barre d'onglets. */
+@media (max-width: 640px) {
+  .menu-deroulant .menu-liste {
+    position: fixed; left: var(--esp-2); right: var(--esp-2); top: auto; min-width: 0; z-index: 60;
+    bottom: calc(var(--barre-onglets-hauteur) + var(--esp-2) + env(safe-area-inset-bottom)); transform-origin: bottom center;
+  }
+}
 
 /* Modale (feuille sur mobile) */
 .modal-fond { position: fixed; inset: 0; background: var(--c-voile); display: grid; place-items: center; z-index: 100; padding: var(--esp-4); }
