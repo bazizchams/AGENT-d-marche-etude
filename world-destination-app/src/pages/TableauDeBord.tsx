@@ -85,7 +85,7 @@ export default function TableauDeBord() {
         <div className="actions" style={{ flexWrap: 'nowrap' }}>
           <div className="champ-recherche" style={{ flex: 1 }}>
             <Icone nom="recherche" taille={16} />
-            <input id="recherche-rapide" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nom, téléphone ou n° de dossier" enterKeyHint="search" />
+            <input id="recherche-rapide" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nom, tél. ou n° de dossier" enterKeyHint="search" />
           </div>
           <button type="submit">Rechercher</button>
         </div>
@@ -193,7 +193,7 @@ export default function TableauDeBord() {
 
         <Section titre="Dossiers en cours par type" icone="graphique">
           {parType.length === 0 ? <Vide icone="dossier" action={<Link className="btn btn-petit" to="/clients?nouveau=1">Ouvrir un dossier</Link>}>Aucun dossier en cours.</Vide> : (
-            <ul className="liste-simple">
+            <ul className="liste-simple liste-compteurs">
               {parType.map(({ m, n }) => (
                 <li key={m.id}>
                   <Link className="avec-pastille" to={`/dossiers?type=${m.id}`} style={{ color: 'inherit' }}><span className="pastille" style={{ background: m.couleur }} />{m.nom}</Link>
