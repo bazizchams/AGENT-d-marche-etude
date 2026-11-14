@@ -60,6 +60,7 @@ async function connexion(page, nom) {
 async function deconnexion(page) {
   await page.evaluate(() => localStorage.removeItem('wd-session'));
   await page.reload();
+  await page.waitForLoadState('networkidle').catch(() => {});
 }
 
 /** Lien du menu principal (gère le menu mobile replié). */
@@ -106,8 +107,18 @@ function ligne(scope, texte) {
 
 /** Choisit un fichier dans le sélecteur ouvert par un clic. */
 async function choisirFichier(page, declencheur, { nom = 'scan.pdf', type = 'application/pdf' } = {}) {
-  const [fc] = await Promise.all([page.waitForEvent('filechooser'), declencheur.click()]);
-  await fc.setFiles({ name: nom, mimeType: type, buffer: Buffer.from('%PDF-1.4\n% fichier de test\n') });
+  await page.waitForLoadState('networkidle').catch(() => {});
+  for (let essai = 1; ; essai++) {
+    try {
+      const [fc] = await Promise.all([page.waitForEvent('filechooser', { timeout: 3000 }), declencheur.click()]);
+      await fc.setFiles({ name: nom, mimeType: type, buffer: Buffer.from('%PDF-1.4\n% fichier de test\n') });
+      if (essai > 1) console.log(`      (avertissement : sélecteur de fichier ouvert au ${essai}e clic)`);
+      return;
+    } catch (e) {
+      if (essai >= 3) throw new Error(`Le clic sur « ${await declencheur.textContent().catch(() => '?')} » n'ouvre pas le sélecteur de fichier (3 essais)`);
+      await page.waitForTimeout(500);
+    }
+  }
 }
 
 /** Toast / message d'état. */
