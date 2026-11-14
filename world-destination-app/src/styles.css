@@ -602,3 +602,5 @@ tr.annule td { color: var(--c-texte-2); }
 @media (max-width: 640px) { .table-cartes .client-mobile { display: inline; } .table-cartes td.col-client { display: none; } }
 .btn-icone { min-width: var(--btn-petit-hauteur); justify-content: center; padding-inline: 6px; }
 @media (max-width: 860px), (pointer: coarse) { .entete .fil { min-height: var(--hauteur-cible); } }
+@media (max-width: 640px) { .table-cartes td.masque-mobile { display: none; } }
+@media (min-width: 641px) { td.cellule-actions .actions { flex-wrap: nowrap; } td.cellule-actions { white-space: nowrap; width: 1%; } }

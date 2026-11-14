@@ -149,8 +149,8 @@ function OngletDocuments({ d }: { d: Dossier }) {
                     {doc.majLe && <div className="petit muted">{dateHeure(doc.majLe)} · {nom(doc.majPar)}</div>}
                   </td>
                   <td data-label="Statut"><BadgeDoc statut={doc.statut} /></td>
-                  <td data-label={doc.nomFichier ? 'Fichier' : ''} className="petit">{doc.nomFichier ? (doc.fichierId ? <button type="button" className="btn-petit" title={doc.nomFichier} onClick={() => ouvrirFichier(doc.fichierId!)}><Icone nom="fichier" taille={15} /> {doc.nomFichier.length > 24 ? doc.nomFichier.slice(0, 22) + '…' : doc.nomFichier}</button> : <span className="muted">{doc.nomFichier}</span>) : <span className="muted" aria-label="Aucun fichier">—</span>}</td>
-                  <td data-label={doc.avecExpiration ? 'Expiration' : ''}>
+                  <td data-label="Fichier" className={`petit ${doc.nomFichier ? '' : 'masque-mobile'}`}>{doc.nomFichier ? (doc.fichierId ? <button type="button" className="btn-petit" title={doc.nomFichier} onClick={() => ouvrirFichier(doc.fichierId!)}><Icone nom="fichier" taille={15} /> {doc.nomFichier.length > 24 ? doc.nomFichier.slice(0, 22) + '…' : doc.nomFichier}</button> : <span className="muted">{doc.nomFichier}</span>) : <span className="muted" aria-label="Aucun fichier">—</span>}</td>
+                  <td data-label="Expiration" className={doc.avecExpiration ? '' : 'masque-mobile'}>
                     {doc.avecExpiration ? (
                       <>
                         <input type="date" value={doc.expiration ?? ''} aria-label={`Date d'expiration : ${doc.nom}`} style={{ maxWidth: 170 }}

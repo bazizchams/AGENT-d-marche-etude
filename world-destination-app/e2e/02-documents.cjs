@@ -23,7 +23,7 @@ module.exports = [
       await visible(row.getByText('Validé'), 'le document téléversé par un agent est « Validé »');
       await visible(row.getByRole('button', { name: /passeport\.pdf/ }), 'le fichier est consultable depuis la ligne');
       await visible(row.getByRole('button', { name: /Remplacer/ }), 'le bouton devient « Remplacer »');
-      await attendre(async () => /\(1\//.test(await page.getByRole('tab', { name: /^Documents/ }).textContent()), 'le compteur de documents passe à 1 validé');
+      await attendre(async () => /\b1\s*\//.test(await page.getByRole('tab', { name: /^Documents/ }).textContent()), 'le compteur de documents passe à 1 validé');
       await onglet(page, 'Journal');
       await visible(page.getByText(re(`${nomDoc} : reçu à l'agence et téléversé`)), 'le journal trace le téléversement');
     },

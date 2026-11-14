@@ -19,7 +19,7 @@ module.exports = [
 
       // Check-list : tous les documents à l'état « Manquant »
       const tabDocs = await page.getByRole('tab', { name: /^Documents/ }).textContent();
-      const [, valides, totalDocs] = tabDocs.match(/\((\d+)\/(\d+)\)/).map(Number);
+      const [, valides, totalDocs] = tabDocs.match(/(\d+)\s*\/\s*(\d+)/).map(Number);
       assert.equal(valides, 0, 'aucun document validé à la création');
       assert.ok(totalDocs >= 5, `check-list générée (${totalDocs} documents)`);
       const manquants = page.getByRole('table').getByRole('row').filter({ hasText: 'Manquant' });
@@ -27,7 +27,7 @@ module.exports = [
 
       // Étapes
       const tabEtapes = await page.getByRole('tab', { name: /^Étapes/ }).textContent();
-      const [, faites, totalEtapes] = tabEtapes.match(/\((\d+)\/(\d+)\)/).map(Number);
+      const [, faites, totalEtapes] = tabEtapes.match(/(\d+)\s*\/\s*(\d+)/).map(Number);
       assert.equal(faites, 0);
       assert.ok(totalEtapes >= 3, `étapes générées (${totalEtapes})`);
       await onglet(page, 'Étapes');
