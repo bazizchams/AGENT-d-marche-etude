@@ -562,7 +562,8 @@ img { max-width: 100%; }
   display: flex; gap: var(--esp-3); align-items: flex-start; color: inherit; position: relative;
   transition: border-color var(--duree-normale) var(--courbe), box-shadow var(--duree-normale) var(--courbe), transform var(--duree-rapide) var(--courbe);
 }
-a.kpi:hover { text-decoration: none; border-color: var(--c-primaire); box-shadow: var(--ombre-2); transform: translateY(-1px); }
+a.kpi:hover { text-decoration: none; border-color: var(--c-primaire); box-shadow: var(--ombre-2); }
+@media (hover: hover) and (pointer: fine) { a.kpi:hover { transform: translateY(-1px); } }
 a.kpi:active { transform: translateY(0) scale(.99); }
 .kpi .kpi-icone { width: 42px; height: 42px; border-radius: var(--rayon-m); display: grid; place-items: center; background: var(--c-neutre-doux); color: var(--c-neutre-texte); flex-shrink: 0; }
 .kpi.ton-info .kpi-icone { background: var(--c-info-doux); color: var(--c-info); }
@@ -814,9 +815,9 @@ tr.annule td { color: var(--c-texte-2); }
 /* Modale (feuille sur mobile) */
 .modal-fond { position: fixed; inset: 0; display: grid; place-items: center; z-index: 100; padding: var(--esp-4); }
 /* Voile sur un calque à part : son opacité suit la feuille quand on la fait glisser. */
-.modal-fond::before {
-  content: ''; position: absolute; inset: 0; z-index: 0; background: var(--c-voile);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: var(--voile-opacite, 1);
+.modal-voile {
+  position: absolute; inset: 0; z-index: 0; background: var(--c-voile);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
 .modal-fond > .modal { z-index: 1; }
 .copie-sortie, .copie-sortie * { pointer-events: none !important; }
@@ -846,7 +847,7 @@ tr.annule td { color: var(--c-texte-2); }
   .modal .pied > * { width: 100%; justify-content: center; white-space: normal; text-align: center; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .modal-fond, .modal-fond::before { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .modal-fond, .modal-voile { backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 /* Feuille mobile : poignée visible, en-tête collant qui sert de zone de saisie. */
 @media (max-width: 640px) {
@@ -1438,7 +1439,7 @@ tbody tr.cliquable:active, .liste-simple li.cliquable:active { background: var(-
   .eventail-grille .carte-eventail:nth-child(4) { rotate: 3deg; translate: 0 6px; }
 }
 .carte-eventail { transition: transform var(--duree-normale) var(--ease-out), border-color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe), box-shadow var(--duree-normale) var(--courbe); }
-@media (hover: hover) { .carte-eventail:hover:not(:disabled) { transform: translateY(-3px); } }
+@media (hover: hover) and (pointer: fine) { .carte-eventail:hover:not(:disabled) { transform: translateY(-3px); } }
 .carte-eventail:active:not(:disabled) { transform: translateY(-1px) scale(.985); transition-duration: var(--duree-rapide); }
 .carte-eventail-barre > span { transition: none; }
 
@@ -1468,3 +1469,15 @@ tbody tr.cliquable:active, .liste-simple li.cliquable:active { background: var(-
 /* Chevron du menu « Prévenir le client » : pivote à l'ouverture. */
 .menu-deroulant > button .icone-svg:last-child { transition: rotate var(--duree-normale) var(--ease-out); }
 .menu-deroulant > button[aria-expanded="true"] .icone-svg:last-child { rotate: 180deg; }
+
+/* Natif sur téléphone (skill mobile-native) */
+html { -webkit-tap-highlight-color: transparent; }
+button, [role="button"], [role="tab"], .choix-carte, .carte-eventail, .barre-onglets a, .nav a {
+  touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+@media (pointer: coarse) { input, select, textarea { font-size: max(16px, 1rem); } }
+/* Survols « collants » au toucher : les petits déplacements au survol ne valent qu'avec une souris. */
+@media (hover: none) {
+  .btn-capsule:hover .capsule-fleche, .choix-carte:hover .capsule-fleche, .anneau-defilement:hover,
+  .intro-passer:hover:not(:disabled), .anneau-defilement:hover:not(:disabled) { transform: none; }
+}

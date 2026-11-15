@@ -91,6 +91,7 @@ export function Modale({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const fondRef = useRef<HTMLDivElement>(null);
+  const voileRef = useRef<HTMLDivElement>(null);
   const fermer = useRef(onFermer);
   fermer.current = onFermer;
   const [idTitre] = useState(() => `modale-titre-${++compteurModale}`);
@@ -100,10 +101,12 @@ export function Modale({
   const rendre = (y: number) => {
     const e = etat.current;
     e.y = y;
+    // Écriture directe sur les deux éléments concernés (pas de variable CSS sur le parent :
+    // elle forcerait le recalcul des styles de tout le contenu de la feuille à chaque image).
     const boite = ref.current;
-    const fond = fondRef.current;
+    const voile = voileRef.current;
     if (boite) boite.style.transform = y ? `translate3d(0, ${y}px, 0)` : '';
-    if (fond && e.h) fond.style.setProperty('--voile-opacite', String(Math.max(0, Math.min(1, 1 - y / e.h))));
+    if (voile && e.h) voile.style.opacity = String(Math.max(0, Math.min(1, 1 - y / e.h)));
   };
 
   useEffect(() => {
@@ -141,7 +144,7 @@ export function Modale({
       e.stop = ressort(e.h, 0, rendre, { reponse: 0.35 });
     } else {
       animer(boite, [{ opacity: 0, transform: 'translate3d(0, 8px, 0) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: DUREE.d200, easing: EASE_OUT });
-      animer(fond, [{ opacity: 0 }, { opacity: 1 }], { duration: DUREE.d200, easing: EASE_OUT });
+      animer(voileRef.current, [{ opacity: 0 }, { opacity: 1 }], { duration: DUREE.d200, easing: EASE_OUT });
     }
     return () => {
       e.stop();
@@ -150,10 +153,11 @@ export function Modale({
       const h = e.h || boite.offsetHeight;
       sortieSiRetire(fond, (copie) => {
         const b = copie.querySelector<HTMLElement>('.modal');
+        const v = copie.querySelector<HTMLElement>('.modal-voile');
         if (feuille && b) {
           ressort(yDepart, h, (y) => {
             b.style.transform = `translate3d(0, ${y}px, 0)`;
-            copie.style.setProperty('--voile-opacite', String(Math.max(0, 1 - y / h)));
+            if (v) v.style.opacity = String(Math.max(0, 1 - y / h));
           }, { reponse: 0.28, fin: () => copie.remove() });
         } else {
           animer(b, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.98)' }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' });
@@ -167,7 +171,7 @@ export function Modale({
   // Glisser vers le bas pour fermer (poignée + titre), avec capture du pointeur.
   const suivi = useRef<{ decalage: number; points: { y: number; t: number }[]; id: number; engage: boolean; y0: number } | null>(null);
   const appui = (ev: React.PointerEvent<HTMLDivElement>) => {
-    if (!feuille || ev.button > 0 || (ev.target as HTMLElement).closest('button, a, input, select, textarea')) return;
+    if (!feuille || suivi.current || ev.button > 0 || (ev.target as HTMLElement).closest('button, a, input, select, textarea')) return; // un 2e doigt est ignoré
     const e = etat.current;
     e.stop(); // on saisit la feuille là où elle est, même en plein mouvement
     e.h = ref.current!.offsetHeight;
@@ -202,6 +206,7 @@ export function Modale({
 
   return (
     <div className={`modal-fond${feuille ? ' en-feuille' : ''}`} ref={fondRef} onMouseDown={(e) => e.target === e.currentTarget && onFermer()}>
+      <div className="modal-voile" ref={voileRef} aria-hidden="true" onMouseDown={() => onFermer()} />
       <div className={`modal ${large ? 'large' : ''}`} role="dialog" aria-modal="true" aria-labelledby={idTitre} ref={ref} tabIndex={-1}>
         <div className="modal-tete" onPointerDown={appui} onPointerMove={deplacement} onPointerUp={relache} onPointerCancel={relache}>
           <span className="modal-poignee" aria-hidden="true" />

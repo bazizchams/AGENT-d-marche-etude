@@ -4,15 +4,19 @@
  * (intro, éventail, sceau, bandeau…), à la demande.
  *
  * Règles (skills apple-design + vectorlab motion/transitions/reduced-motion) :
- * - durées 100 / 150 / 200 / 300 ms, entrée ease-out, sortie ease-in plus courte ;
+ * - durées 100 / 150 / 200 / 300 ms, entrée ease-out, sortie ease-out plus courte ;
  * - transform et opacity uniquement ;
  * - mouvement réduit : fondu ≤ 150 ms ou rien ;
  * - tout ce que l'on peut saisir (feuille) est un ressort qui part de la valeur affichée.
  */
 
 export const DUREE = { d100: 100, d150: 150, d200: 200, d300: 300 } as const;
-export const EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
-export const EASE_IN = 'cubic-bezier(0.7, 0, 0.84, 0)';
+export const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+/**
+ * Courbe des sorties. Pas d'ease-in en interface (skill emil-design-eng : il démarre lentement,
+ * précisément quand l'œil regarde) : une sortie est un ease-out plus court que l'entrée.
+ */
+export const EASE_IN = 'cubic-bezier(0.23, 1, 0.32, 1)';
 
 const mq = (q: string) => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(q).matches;
 export const mouvementReduit = () => mq('(prefers-reduced-motion: reduce)');
