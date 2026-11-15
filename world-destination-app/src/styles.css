@@ -95,9 +95,13 @@
   --graisse-display: 800;
 
   /* Mouvement CSS (micro-interactions) */
-  --duree-rapide: 120ms;
-  --duree-normale: 200ms;
+  --duree-rapide: 100ms;   /* retour au toucher, survols */
+  --duree-normale: 200ms;  /* entrées */
+  --duree-sortie: 150ms;   /* sorties : toujours plus courtes que les entrées */
+  --duree-longue: 300ms;   /* remplissages, feuilles */
   --courbe: cubic-bezier(.2, .8, .2, 1);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-in: cubic-bezier(.7, 0, .84, 0);
 
   /* Gabarits */
   --vp-wide: 1320px;
@@ -808,7 +812,17 @@ tr.annule td { color: var(--c-texte-2); }
 }
 
 /* Modale (feuille sur mobile) */
-.modal-fond { position: fixed; inset: 0; background: var(--c-voile); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: grid; place-items: center; z-index: 100; padding: var(--esp-4); }
+.modal-fond { position: fixed; inset: 0; display: grid; place-items: center; z-index: 100; padding: var(--esp-4); }
+/* Voile sur un calque à part : son opacité suit la feuille quand on la fait glisser. */
+.modal-fond::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; background: var(--c-voile);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: var(--voile-opacite, 1);
+}
+.modal-fond > .modal { z-index: 1; }
+.copie-sortie, .copie-sortie * { pointer-events: none !important; }
+.modal-tete { position: relative; }
+.modal-tete h2 { margin-bottom: var(--esp-4); }
+.modal-poignee { display: none; }
 .modal {
   position: relative; isolation: isolate;
   background: var(--c-surface); color: var(--c-texte); border: 1px solid var(--c-bord); border-radius: var(--rayon-l);
@@ -832,7 +846,20 @@ tr.annule td { color: var(--c-texte-2); }
   .modal .pied > * { width: 100%; justify-content: center; white-space: normal; text-align: center; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .modal-fond { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .modal-fond, .modal-fond::before { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+/* Feuille mobile : poignée visible, en-tête collant qui sert de zone de saisie. */
+@media (max-width: 640px) {
+  .modal-fond.en-feuille .modal { will-change: transform; }
+  .modal-fond.en-feuille .modal-tete {
+    position: sticky; top: -18px; z-index: 6; margin: -18px calc(-1 * var(--esp-4)) 0; padding: 22px var(--esp-4) 0;
+    background: var(--c-surface); touch-action: none; cursor: grab;
+  }
+  .modal-fond.en-feuille .modal-tete:active { cursor: grabbing; }
+  .modal-fond.en-feuille .modal-poignee {
+    display: block; position: absolute; top: 8px; left: 50%; width: 40px; height: 5px; margin-left: -20px;
+    border-radius: var(--rayon-rond); background: var(--c-bord-fort);
+  }
 }
 
 /* États vides */
@@ -1389,3 +1416,55 @@ tr.annule td { color: var(--c-texte-2); }
   .choix-carte:hover:not(:disabled) .capsule-fleche,
   .anneau-defilement:hover:not(:disabled) { transform: none !important; }
 }
+
+
+/* =====================================================================
+   Peaufinage du mouvement (skills apple-design, motion, transitions, reduced-motion)
+   ===================================================================== */
+/* Repli de chargement d'écran : réserve la place, rien de visible (pas de clignotement < 150 ms). */
+.chargement-ecran { min-height: 60vh; }
+
+/* Retour au toucher immédiat et cohérent : on gère nous-mêmes la réaction à l'appui. */
+a, button, [role="tab"], tr.cliquable, li.cliquable { -webkit-tap-highlight-color: transparent; }
+tbody tr.cliquable:active, .liste-simple li.cliquable:active { background: var(--c-primaire-doux); transition-duration: 0ms; }
+.choix-carte { transition: transform var(--duree-rapide) var(--courbe), border-color var(--duree-rapide) var(--courbe), box-shadow var(--duree-normale) var(--courbe), background-color var(--duree-rapide) var(--courbe); }
+.choix-carte:active:not(:disabled) { transform: scale(.985); }
+
+/* Éventail : éventail adouci (lisibilité) et soulèvement de 3 px au survol, au lieu d'une inclinaison 3D. */
+@media (min-width: 861px) {
+  .eventail-grille .carte-eventail:nth-child(1) { rotate: -3deg; translate: 0 6px; }
+  .eventail-grille .carte-eventail:nth-child(2) { rotate: -1deg; translate: 0 1px; }
+  .eventail-grille .carte-eventail:nth-child(3) { rotate: 1deg; translate: 0 1px; }
+  .eventail-grille .carte-eventail:nth-child(4) { rotate: 3deg; translate: 0 6px; }
+}
+.carte-eventail { transition: transform var(--duree-normale) var(--ease-out), border-color var(--duree-rapide) var(--courbe), background-color var(--duree-rapide) var(--courbe), box-shadow var(--duree-normale) var(--courbe); }
+@media (hover: hover) { .carte-eventail:hover:not(:disabled) { transform: translateY(-3px); } }
+.carte-eventail:active:not(:disabled) { transform: translateY(-1px) scale(.985); transition-duration: var(--duree-rapide); }
+.carte-eventail-barre > span { transition: none; }
+
+/* Bandeau défilant : commande pause / lecture (WCAG 2.2.2). */
+.bandeau-marquee.avec-commande { padding-inline-end: 40px; }
+.bandeau-marquee-commande {
+  position: absolute; top: 50%; inset-inline-end: 6px; transform: translateY(-50%);
+  width: 28px; height: 28px; min-height: 28px; padding: 0; border-radius: 50%; justify-content: center;
+  background: var(--c-surface); border: 1px solid var(--c-bord-fort); color: var(--c-texte-2); z-index: 2;
+}
+.bandeau-marquee-commande:hover:not(:disabled) { color: var(--c-primaire-texte); border-color: var(--c-primaire); }
+.bandeau-marquee-commande:active:not(:disabled) { transform: translateY(-50%) scale(.92); }
+.bandeau-marquee-commande::after { content: ''; position: absolute; inset: -8px; } /* zone tactile 44 px */
+.connexion-hero .bandeau-marquee-commande { background: rgba(7, 25, 30, .7); border-color: rgba(79, 212, 232, .4); color: #e3f5f8; }
+
+/* Anneau « remonter » : entrée par un léger glissement plutôt qu'un saut d'opacité. */
+.anneau-defilement { transform: translateY(6px); }
+.anneau-defilement.est-visible { transform: none; }
+
+/* Mouvement réduit : rien ne glisse, rien ne s'incline ; seules les couleurs changent. */
+@media (prefers-reduced-motion: reduce) {
+  .carte-eventail:hover:not(:disabled), .carte-eventail:active:not(:disabled), .choix-carte:active:not(:disabled),
+  .bandeau-marquee-commande:active:not(:disabled), .anneau-defilement { transform: none !important; }
+  .bandeau-marquee-commande { transform: translateY(-50%) !important; }
+  .modal-fond.en-feuille .modal { will-change: auto; }
+}
+/* Chevron du menu « Prévenir le client » : pivote à l'ouverture. */
+.menu-deroulant > button .icone-svg:last-child { transition: rotate var(--duree-normale) var(--ease-out); }
+.menu-deroulant > button[aria-expanded="true"] .icone-svg:last-child { rotate: 180deg; }

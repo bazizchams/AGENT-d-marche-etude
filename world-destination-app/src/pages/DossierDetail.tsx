@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Icone, type NomIcone } from '../components/Icone';
-import { EntreePage, PanneauDeroulant, StaggerGrille, StaggerListe } from '../components/Motion';
+import { EntreePage, PanneauDeroulant, StaggerGrille, StaggerListe } from '../components/MotionLeger';
 import { BadgeDoc, BadgeDossier, Barre, Modale, Onglets, Vide, notifier, tenter } from '../components/ui';
 import { ouvrirFichier, TAILLE_MAX, TYPES_ACCEPTES, typeAutorise } from '../lib/fichiers';
 import { LIBELLES_MESSAGES, lienEspaceClient, lienWhatsApp, rediger, type TypeMessage } from '../lib/messages';

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { ErreurMetier } from '../lib/store';
 import type { StatutDocument, StatutDossier } from '../lib/types';
 import { Icone, type NomIcone } from './Icone';
-import { animer, copieDeSortie, DUREE, EASE_IN, EASE_OUT, ecranEtroit, elastique, entree, mouvementReduit, projeter, ressort } from './mouvement';
+import { animer, retirerALaFin, sortieSiRetire, DUREE, EASE_IN, EASE_OUT, ecranEtroit, elastique, entree, mouvementReduit, projeter, ressort } from './mouvement';
 
 export { Icone } from './Icone';
 
@@ -47,12 +47,8 @@ export function ZoneToast() {
     const el = toastRef.current;
     if (!el) return;
     animer(el, [{ opacity: 0, transform: 'translate3d(0, 12px, 0) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: DUREE.d200, easing: EASE_OUT });
-    return () => {
-      if (!el.isConnected) return;
-      const copie = copieDeSortie(el);
-      const a = animer(copie, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0, 8px, 0)' }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' });
-      if (a) a.onfinish = () => copie.remove(); else copie.remove();
-    };
+    return () => sortieSiRetire(el, (copie) =>
+      retirerALaFin(copie, animer(copie, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0, 8px, 0)' }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' })));
   }, [t?.id]);
 
   if (!t) return null;
@@ -149,20 +145,21 @@ export function Modale({
     }
     return () => {
       e.stop();
-      if (e.fermeeParGeste || !fond.isConnected) return; // déjà hors de l'écran
-      const copie = copieDeSortie(fond);
-      const b = copie.querySelector<HTMLElement>('.modal');
-      if (feuille && b) {
-        const h = e.h || boite.offsetHeight;
-        ressort(e.y, h, (y) => {
-          b.style.transform = `translate3d(0, ${y}px, 0)`;
-          copie.style.setProperty('--voile-opacite', String(Math.max(0, 1 - y / h)));
-        }, { reponse: 0.28, fin: () => copie.remove() });
-      } else {
-        animer(b, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.98)' }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' });
-        const a = animer(copie, [{ opacity: 1 }, { opacity: 0 }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' });
-        if (a) a.onfinish = () => copie.remove(); else copie.remove();
-      }
+      if (e.fermeeParGeste) return; // déjà hors de l'écran
+      const yDepart = e.y;
+      const h = e.h || boite.offsetHeight;
+      sortieSiRetire(fond, (copie) => {
+        const b = copie.querySelector<HTMLElement>('.modal');
+        if (feuille && b) {
+          ressort(yDepart, h, (y) => {
+            b.style.transform = `translate3d(0, ${y}px, 0)`;
+            copie.style.setProperty('--voile-opacite', String(Math.max(0, 1 - y / h)));
+          }, { reponse: 0.28, fin: () => copie.remove() });
+        } else {
+          animer(b, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.98)' }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' });
+          retirerALaFin(copie, animer(copie, [{ opacity: 1 }, { opacity: 0 }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' }));
+        }
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -183,7 +180,7 @@ export function Modale({
     if (!s.engage && Math.abs(ev.clientY - s.y0) < 4) return; // petite hystérésis : un simple toucher ne bouge rien
     s.engage = true;
     const brut = ev.clientY - s.decalage;
-    rendre(brut < 0 ? elastique(brut, etat.current.h) : brut);
+    rendre(brut < 0 ? elastique(brut, 120) : brut); // résistance nette vers le haut
     s.points.push({ y: ev.clientY, t: ev.timeStamp });
     if (s.points.length > 5) s.points.shift();
   };

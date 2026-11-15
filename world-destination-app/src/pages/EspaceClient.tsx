@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Icone, type NomIcone } from '../components/Icone';
-import { EntreePage, StaggerListe } from '../components/Motion';
+import { EntreePage, StaggerListe } from '../components/MotionLeger';
 import { Barre, notifier, tenter } from '../components/ui';
 import { TAILLE_MAX, TYPES_ACCEPTES, typeAutorise } from '../lib/fichiers';
 import { echeanceExigible, montant, progression, resteEcheance, resteFrais } from '../lib/regles';

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icone } from '../components/Icone';
-import { EntreePage } from '../components/Motion';
+import { EntreePage } from '../components/MotionLeger';
 import { Modale, Vide, tenter } from '../components/ui';
 import { date, formatSoldes, nomClient, soldes } from '../lib/regles';
 import { creerClient, ouvrirDossier, useBase, useUtilisateur } from '../lib/store';

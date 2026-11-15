@@ -100,18 +100,28 @@ export const elastique = (depassement: number, dimension: number, constante = 0.
   (depassement * dimension * constante) / (dimension + constante * Math.abs(depassement));
 
 /**
- * Sortie symétrique d'un élément que React retire : copie inerte (sans rôle ni id, cachée aux
- * technologies d'assistance), animée puis supprimée. Ne bloque ni Échap ni le focus.
+ * Sortie symétrique d'un élément que React retire : on en prend une copie inerte (sans rôle ni id,
+ * cachée aux technologies d'assistance) que l'on anime puis supprime. Ne bloque ni Échap ni le focus.
+ *
+ * À appeler depuis le nettoyage d'un useLayoutEffect : la copie n'est insérée que si l'élément
+ * d'origine a réellement quitté le DOM (sinon c'est un double montage du mode strict, ignoré).
  */
-export function copieDeSortie(el: HTMLElement): HTMLElement {
+export function sortieSiRetire(el: HTMLElement, animerCopie: (copie: HTMLElement) => void, parent: HTMLElement = document.body) {
   const copie = el.cloneNode(true) as HTMLElement;
-  copie.setAttribute('aria-hidden', 'true');
-  copie.setAttribute('inert', '');
-  copie.removeAttribute('id');
-  copie.removeAttribute('role');
-  copie.querySelectorAll('[id], [role], [aria-live]').forEach((n) => { n.removeAttribute('id'); n.removeAttribute('role'); n.removeAttribute('aria-live'); });
-  copie.style.pointerEvents = 'none';
-  copie.classList.add('copie-sortie');
-  document.body.appendChild(copie);
-  return copie;
+  queueMicrotask(() => {
+    if (el.isConnected || !parent.isConnected) return;
+    copie.setAttribute('aria-hidden', 'true');
+    copie.setAttribute('inert', '');
+    copie.removeAttribute('id');
+    copie.removeAttribute('role');
+    copie.querySelectorAll('[id], [role], [aria-live]').forEach((n) => { n.removeAttribute('id'); n.removeAttribute('role'); n.removeAttribute('aria-live'); });
+    copie.classList.add('copie-sortie');
+    parent.appendChild(copie);
+    animerCopie(copie);
+  });
+}
+
+/** Supprime la copie à la fin de l'animation (ou tout de suite s'il n'y en a pas). */
+export function retirerALaFin(copie: HTMLElement, a: Animation | null) {
+  if (a) a.onfinish = () => copie.remove(); else copie.remove();
 }

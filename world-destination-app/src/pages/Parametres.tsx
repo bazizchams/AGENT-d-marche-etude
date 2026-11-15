@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Icone } from '../components/Icone';
-import { EntreePage } from '../components/Motion';
+import { EntreePage } from '../components/MotionLeger';
 import { Modale, Onglets, tenter } from '../components/ui';
 import { montant, uid } from '../lib/regles';
 import { enregistrerModele, enregistrerUtilisateur, majParametres, reinitialiserDemo, useBase, useUtilisateur } from '../lib/store';

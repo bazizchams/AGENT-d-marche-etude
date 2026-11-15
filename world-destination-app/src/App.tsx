@@ -1,24 +1,57 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Icone, type NomIcone } from './components/Icone';
-import {
-  AnneauDefilement,
-  CurseurMagnetique,
-  declencherIntroCinetique,
-  IntroCinetique,
-} from './components/Motion';
+import { AnneauDefilement, declencherIntroCinetique, EVENEMENT_REJOUER_INTRO } from './components/MotionLeger';
 import { ZoneToast } from './components/ui';
 import { deconnexion, modeEnLigne, useUtilisateur } from './lib/store';
-import Caisse from './pages/Caisse';
-import Clients from './pages/Clients';
-import Connexion from './pages/Connexion';
-import DossierDetail from './pages/DossierDetail';
-import Dossiers from './pages/Dossiers';
-import EspaceClient from './pages/EspaceClient';
-import FicheClient from './pages/FicheClient';
-import Parametres from './pages/Parametres';
-import Recu from './pages/Recu';
-import TableauDeBord from './pages/TableauDeBord';
+// Écrans chargés à la demande : le bundle initial ne contient que la coquille.
+// GSAP (pièces « signature ») n'est téléchargé qu'avec les écrans qui l'utilisent.
+const Caisse = lazy(() => import('./pages/Caisse'));
+const Clients = lazy(() => import('./pages/Clients'));
+const Connexion = lazy(() => import('./pages/Connexion'));
+const DossierDetail = lazy(() => import('./pages/DossierDetail'));
+const Dossiers = lazy(() => import('./pages/Dossiers'));
+const EspaceClient = lazy(() => import('./pages/EspaceClient'));
+const FicheClient = lazy(() => import('./pages/FicheClient'));
+const Parametres = lazy(() => import('./pages/Parametres'));
+const Recu = lazy(() => import('./pages/Recu'));
+const TableauDeBord = lazy(() => import('./pages/TableauDeBord'));
+const IntroCinetique = lazy(() => import('./components/Motion').then((m) => ({ default: m.IntroCinetique })));
+const CurseurMagnetique = lazy(() => import('./components/Motion').then((m) => ({ default: m.CurseurMagnetique })));
+
+/** L'intro n'est chargée que si elle doit jouer (1re visite de la session) ou si on la redemande. */
+function IntroALaDemande() {
+  const [charger, setCharger] = useState(() => {
+    try {
+      return typeof navigator !== 'undefined' && !navigator.webdriver && !sessionStorage.getItem('wd-intro-vue')
+        && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch { return false; }
+  });
+  useEffect(() => {
+    const surRejeu = () => {
+      if (charger) return;
+      setCharger(true);
+      // Le composant n'écoutait pas encore : on relance l'événement une fois monté.
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent(EVENEMENT_REJOUER_INTRO)), 50);
+    };
+    window.addEventListener(EVENEMENT_REJOUER_INTRO, surRejeu);
+    return () => window.removeEventListener(EVENEMENT_REJOUER_INTRO, surRejeu);
+  }, [charger]);
+  return charger ? <Suspense fallback={null}><IntroCinetique /></Suspense> : null;
+}
+
+/** Curseur personnalisé : seulement avec une souris, sans mouvement réduit, sur grand écran. */
+function CurseurALaDemande() {
+  const [ok] = useState(() => typeof window !== 'undefined'
+    && window.matchMedia('(pointer: fine) and (hover: hover) and (min-width: 861px)').matches
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  return ok ? <Suspense fallback={null}><CurseurMagnetique /></Suspense> : null;
+}
+
+/** Repli pendant le chargement d'un écran : rien de visible avant 150 ms (pas de clignotement). */
+function Chargement() {
+  return <div className="chargement-ecran" aria-busy="true" />;
+}
 
 type Destination = { to: string; lib: string; court: string; icone: NomIcone; admin?: boolean };
 const DESTINATIONS: Destination[] = [
@@ -97,8 +130,8 @@ function Coquille() {
 
   // Revient en haut de page à chaque changement d'écran.
   useEffect(() => { window.scrollTo(0, 0); }, [loc.pathname]);
-  if (loc.pathname.startsWith('/espace/')) return <Routes><Route path="/espace/:id" element={<EspaceClient />} /></Routes>;
-  if (!user) return <Connexion />;
+  if (loc.pathname.startsWith('/espace/')) return <Suspense fallback={<Chargement />}><Routes><Route path="/espace/:id" element={<EspaceClient />} /></Routes></Suspense>;
+  if (!user) return <Suspense fallback={<Chargement />}><Connexion /></Suspense>;
   const admin = user.role === 'admin';
   const liens = DESTINATIONS.filter((d) => !d.admin || admin);
   const infoTheme = INFO_THEME[theme];
@@ -168,6 +201,7 @@ function Coquille() {
         </div>
       </aside>
       <main className="contenu" id="contenu" tabIndex={-1}>
+        <Suspense fallback={<Chargement />}>
         <Routes>
           <Route path="/" element={<TableauDeBord />} />
           <Route path="/clients" element={<Clients />} />
@@ -179,6 +213,7 @@ function Coquille() {
           {admin && <Route path="/parametres" element={<Parametres />} />}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        </Suspense>
       </main>
       <nav className="barre-onglets no-print" aria-label="Navigation principale (mobile)">
         {liens.map((d) => (
@@ -192,8 +227,8 @@ function Coquille() {
 export default function App() {
   return (
     <HashRouter>
-      <IntroCinetique />
-      <CurseurMagnetique />
+      <IntroALaDemande />
+      <CurseurALaDemande />
       <AnneauDefilement />
       {!modeEnLigne && (
         <div className="bandeau-demo no-print" role="note">

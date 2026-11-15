@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Icone } from '../components/Icone';
-import { EntreePage, StaggerGrille, StaggerListe } from '../components/Motion';
+import { EntreePage, StaggerGrille, StaggerListe } from '../components/MotionLeger';
 import { Barre, BadgeDossier, Modale, Vide, notifier, tenter } from '../components/ui';
 import { date, formatSoldes, nomClient, progression, soldes } from '../lib/regles';
 import { inviterClient, majClient, ouvrirDossier, useBase, useUtilisateur } from '../lib/store';

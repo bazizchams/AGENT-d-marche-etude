@@ -12,7 +12,7 @@ import {
   type JSX,
   type ReactNode,
 } from 'react';
-import { cascade, DUREE, EASE_IN, EASE_OUT, animer, entree, mouvementReduit } from './mouvement';
+import { cascade, DUREE, EASE_IN, EASE_OUT, animer, entree, mouvementReduit, retirerALaFin, sortieSiRetire } from './mouvement';
 
 function selectionnerCibles(racine: HTMLElement, selecteur: string): Element[] {
   const s = selecteur.trim();
@@ -128,27 +128,28 @@ export function CompteurAnime({ valeur, format, duree = 0.3, compteDepuisZero = 
 
 /**
  * Menu déroulant / feuille d'actions : apparaît depuis son déclencheur (échelle + fondu, origine
- * en haut à droite) ou monte du bas sur téléphone ; `sortie` rejoue le même chemin à l'envers.
+ * en haut à droite) ou monte du bas sur téléphone ; à la fermeture, une copie inerte repart par
+ * le même chemin (150 ms, ease-in) sans retarder le focus ni le clic suivant.
  */
-export function PanneauDeroulant({ children, className, role, 'aria-label': ariaLabel, style, sortie = false }: {
-  children: ReactNode; className?: string; role?: string; 'aria-label'?: string; style?: CSSProperties; sortie?: boolean;
+export function PanneauDeroulant({ children, className, role, 'aria-label': ariaLabel, style }: {
+  children: ReactNode; className?: string; role?: string; 'aria-label'?: string; style?: CSSProperties;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const images = (): Keyframe[] => {
-    const mobile = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 640px)').matches;
-    return mobile
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const parent = el?.parentElement;
+    if (!el || !parent) return;
+    const mobile = window.matchMedia?.('(max-width: 640px)').matches;
+    const images: Keyframe[] = mobile
       ? [{ opacity: 0, transform: 'translate3d(0, 16px, 0)' }, { opacity: 1, transform: 'none' }]
       : [{ opacity: 0, transform: 'translate3d(0, -4px, 0) scale(.97)' }, { opacity: 1, transform: 'none' }];
-  };
-  useLayoutEffect(() => {
-    const a = animer(ref.current, images(), { duration: DUREE.d200, easing: EASE_OUT });
-    return () => a?.cancel();
+    const a = animer(el, images, { duration: DUREE.d200, easing: EASE_OUT });
+    return () => {
+      a?.cancel();
+      sortieSiRetire(el, (copie) => retirerALaFin(copie, animer(copie, [...images].reverse(), { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' })), parent);
+    };
   }, []);
-  useLayoutEffect(() => {
-    if (!sortie) return;
-    animer(ref.current, images().reverse(), { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' });
-  }, [sortie]);
-  return <div ref={ref} className={className} role={role} aria-label={ariaLabel} style={style} data-sortie={sortie || undefined}>{children}</div>;
+  return <div ref={ref} className={className} role={role} aria-label={ariaLabel} style={style}>{children}</div>;
 }
 
 /* ---------------- Intro (événement léger, l'intro elle-même est chargée à la demande) ---------------- */

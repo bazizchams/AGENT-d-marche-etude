@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icone } from '../components/Icone';
-import { CompteurAnime, EntreePage, StaggerGrille } from '../components/Motion';
+import { CompteurAnime, EntreePage, StaggerGrille } from '../components/MotionLeger';
 import { Vide } from '../components/ui';
 import { dateHeure, montant, nomClient } from '../lib/regles';
 import { useBase } from '../lib/store';
