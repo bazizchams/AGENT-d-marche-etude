@@ -7,8 +7,6 @@ import {
   useState,
   type CSSProperties,
   type JSX,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from 'react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
@@ -18,308 +16,25 @@ gsap.registerPlugin(useGSAP);
 
 const REDUCE_QUERY = '(prefers-reduced-motion: reduce)';
 const MOTION_QUERY = '(prefers-reduced-motion: no-preference)';
-const MOBILE_QUERY = '(max-width: 640px)';
+
+// Primitives des écrans de travail : version légère sans GSAP (réexportées pour compatibilité).
+export { AnneauDefilement, CompteurAnime, declencherIntroCinetique, EntreePage, PanneauDeroulant, StaggerGrille, StaggerListe } from './MotionLeger';
+import { EVENEMENT_REJOUER_INTRO } from './MotionLeger';
 
 /**
- * Sélectionne les cibles dans un conteneur de façon sûre (supporte '> *', ':scope > *' et sélecteurs CSS).
+ * Met en pause une animation en boucle quand son élément sort de l'écran (économie de batterie,
+ * pas de mouvement inutile) et la reprend quand il revient. Renvoie la fonction de nettoyage.
  */
-function selectionnerCibles(racine: HTMLElement, selecteur: string): Element[] {
-  const s = selecteur.trim();
-  if (s === '> *' || s === ':scope > *') return Array.from(racine.children);
-  const normalise = s.startsWith('>') ? `:scope ${s}` : s;
-  return Array.from(racine.querySelectorAll(normalise));
+function pauseHorsEcran(el: Element, anim: { pause: () => unknown; resume: () => unknown }, estEnPauseManuelle = () => false) {
+  if (typeof IntersectionObserver === 'undefined') return () => {};
+  const obs = new IntersectionObserver(([e]) => {
+    if (e.isIntersecting && !estEnPauseManuelle()) anim.resume(); else anim.pause();
+  });
+  obs.observe(el);
+  return () => obs.disconnect();
 }
 
-/**
- * Entrée de page ou de panneau : élévation verticale légère (sans décalage horizontal),
- * jamais de visibility:hidden afin de préserver focus et clics E2E dès la frame 0.
- */
-export function EntreePage({
-  children,
-  className,
-  cle,
-  style,
-}: {
-  children: ReactNode;
-  className?: string;
-  cle?: string | number;
-  style?: CSSProperties;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useGSAP(
-    () => {
-      const el = ref.current;
-      if (!el || typeof window === 'undefined') return;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, motion: '(prefers-reduced-motion: no-preference)' }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-        gsap.fromTo(
-          el,
-          { y: 8, opacity: 0.02 },
-          { y: 0, opacity: 1, duration: 0.24, ease: 'power3.out', clearProps: 'transform,opacity' },
-        );
-      });
-      return () => mm.revert();
-    },
-    { scope: ref, dependencies: [cle], revertOnUpdate: true },
-  );
-
-  return (
-    <div ref={ref} className={className} style={style}>
-      {children}
-    </div>
-  );
-}
-
-/**
- * Apparition en cascade pour grilles Bento, KPI et groupes de cartes (budget total plafonné ≤ 280 ms).
- */
-export function StaggerGrille({
-  children,
-  className,
-  selecteur = '> *',
-  decalage = 0.04,
-  style,
-}: {
-  children: ReactNode;
-  className?: string;
-  selecteur?: string;
-  decalage?: number;
-  style?: CSSProperties;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useGSAP(
-    () => {
-      const el = ref.current;
-      if (!el || typeof window === 'undefined') return;
-      const cibles = selectionnerCibles(el, selecteur);
-      if (!cibles.length) return;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, motion: '(prefers-reduced-motion: no-preference)' }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-        const step = cibles.length > 1 ? Math.min(decalage, 0.28 / (cibles.length - 1)) : 0;
-        gsap.fromTo(
-          cibles,
-          { y: 10, scale: 0.985, opacity: 0.02 },
-          {
-            y: 0,
-            scale: 1,
-            opacity: 1,
-            duration: 0.26,
-            stagger: step,
-            ease: 'power3.out',
-            clearProps: 'transform,opacity',
-          },
-        );
-      });
-      return () => mm.revert();
-    },
-    { scope: ref },
-  );
-
-  return (
-    <div ref={ref} className={className} style={style}>
-      {children}
-    </div>
-  );
-}
-
-/**
- * Cascade légère pour listes ou parcours d'étapes (`as="ol"` supporté pour conserver `<ol> > <li>`).
- */
-export function StaggerListe({
-  children,
-  as: Tag = 'div',
-  className,
-  selecteur = '> *',
-  style,
-  'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
-}: {
-  children: ReactNode;
-  as?: 'div' | 'ul' | 'ol';
-  className?: string;
-  selecteur?: string;
-  style?: CSSProperties;
-  'aria-label'?: string;
-  'aria-labelledby'?: string;
-}) {
-  const ref = useRef<HTMLElement>(null);
-
-  useGSAP(
-    () => {
-      const el = ref.current;
-      if (!el || typeof window === 'undefined') return;
-      const cibles = selectionnerCibles(el, selecteur).slice(0, 12);
-      if (!cibles.length) return;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, motion: '(prefers-reduced-motion: no-preference)' }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-        const step = cibles.length > 1 ? Math.min(0.025, 0.22 / (cibles.length - 1)) : 0;
-        gsap.fromTo(
-          cibles,
-          { y: 6, opacity: 0.02 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.2,
-            stagger: step,
-            ease: 'power2.out',
-            clearProps: 'transform,opacity',
-          },
-        );
-      });
-      return () => mm.revert();
-    },
-    { scope: ref },
-  );
-
-  const props = {
-    ref: ref as never,
-    className,
-    style,
-    'aria-label': ariaLabel,
-    'aria-labelledby': ariaLabelledBy,
-  };
-
-  if (Tag === 'ol') return <ol {...props}>{children}</ol>;
-  if (Tag === 'ul') return <ul {...props}>{children}</ul>;
-  return <div {...props}>{children}</div>;
-}
-
-type JetonNombre = {
-  debut: number;
-  fin: number;
-  cible: number;
-  decimales: number;
-  sepDec: string;
-  sepMil: string;
-};
-
-function extraireJetons(texte: string): JetonNombre[] {
-  const jetons: JetonNombre[] = [];
-  const regex = /\d[\d\s\u00a0\u202f]*(?:[.,]\d+)?/g;
-  let m: RegExpExecArray | null;
-  while ((m = regex.exec(texte)) !== null) {
-    const brut = m[0];
-    const matchSepMil = /[\s\u00a0\u202f]/.exec(brut);
-    const sepMil = matchSepMil ? matchSepMil[0] : '\u202f';
-    const idxDec = Math.max(brut.lastIndexOf(','), brut.lastIndexOf('.'));
-    const sepDec = idxDec >= 0 ? brut[idxDec] : ',';
-    const decimales = idxDec >= 0 ? brut.length - idxDec - 1 : 0;
-    const canon = brut.replace(/[\s\u00a0\u202f]/g, '').replace(',', '.');
-    const cible = Number(canon);
-    if (Number.isFinite(cible)) {
-      jetons.push({ debut: m.index, fin: m.index + brut.length, cible, decimales, sepDec, sepMil });
-    }
-  }
-  return jetons;
-}
-
-function formaterJeton(valeur: number, jeton: JetonNombre): string {
-  const arrondi = jeton.decimales > 0 ? valeur.toFixed(jeton.decimales) : String(Math.round(valeur));
-  const [entier, dec] = arrondi.split('.');
-  const groupe = entier.replace(/\B(?=(\d{3})+(?!\d))/g, jeton.sepMil);
-  return dec !== undefined ? `${groupe}${jeton.sepDec}${dec}` : groupe;
-}
-
-/**
- * Compteur KPI animé :
- * - `compteDepuisZero=false` (défaut) : conserve la valeur réelle dans le DOM dès la frame 0 (sûr pour E2E)
- *   et applique une arrivée verticale fluide façon odomètre.
- * - `compteDepuisZero=true` : interpole de 0 jusqu'à la cible (nombres ou chaînes multi-devises `Intl`).
- */
-export function CompteurAnime({
-  valeur,
-  format,
-  duree = 0.32,
-  compteDepuisZero = false,
-  className,
-}: {
-  valeur: number | string;
-  format?: (n: number) => string;
-  duree?: number;
-  compteDepuisZero?: boolean;
-  className?: string;
-}) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const renduFinal = typeof valeur === 'number' ? (format ? format(valeur) : String(valeur)) : valeur;
-
-  useGSAP(
-    () => {
-      const el = ref.current;
-      if (!el || typeof window === 'undefined') return;
-      el.textContent = renduFinal;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, motion: '(prefers-reduced-motion: no-preference)' }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-
-        if (!compteDepuisZero) {
-          gsap.fromTo(
-            el,
-            { y: 7, scale: 0.96, opacity: 0.05 },
-            { y: 0, scale: 1, opacity: 1, duration: 0.24, ease: 'power3.out', clearProps: 'transform,opacity' },
-          );
-          return;
-        }
-
-        if (typeof valeur === 'number') {
-          const obj = { v: 0 };
-          gsap.to(obj, {
-            v: valeur,
-            duration: duree,
-            ease: 'power2.out',
-            onUpdate: () => {
-              const courant = Number.isInteger(valeur) ? Math.round(obj.v) : Number(obj.v.toFixed(2));
-              el.textContent = format ? format(courant) : String(courant);
-            },
-            onComplete: () => {
-              el.textContent = renduFinal;
-            },
-          });
-          return;
-        }
-
-        const jetons = extraireJetons(renduFinal);
-        if (!jetons.length) return;
-        const etat = { p: 0 };
-        gsap.to(etat, {
-          p: 1,
-          duration: duree,
-          ease: 'power2.out',
-          onUpdate: () => {
-            let out = '';
-            let curseur = 0;
-            for (const j of jetons) {
-              out += renduFinal.slice(curseur, j.debut);
-              out += formaterJeton(j.cible * etat.p, j);
-              curseur = j.fin;
-            }
-            out += renduFinal.slice(curseur);
-            el.textContent = out;
-          },
-          onComplete: () => {
-            el.textContent = renduFinal;
-          },
-        });
-      });
-      return () => mm.revert();
-    },
-    { scope: ref, dependencies: [renduFinal, compteDepuisZero, duree], revertOnUpdate: true },
-  );
-
-  return (
-    <span
-      ref={ref}
-      className={className}
-      style={{ display: 'inline-block', fontVariantNumeric: 'tabular-nums' }}
-    >
-      {renduFinal}
-    </span>
-  );
-}
+const CLE_INTRO_VUE = 'wd-intro-vue';
 
 /**
  * Signature visuelle World Destination : arc orbital et avion ascendant animés par GSAP.
@@ -372,19 +87,16 @@ export function AvionTrajectoire({
           tl.fromTo(
             balise,
             { scale: 0.4, opacity: 0.15 },
-            { scale: 1, opacity: 1, svgOrigin: '18 82', duration: 0.24, ease: 'back.out(1.6)' },
+            { scale: 1, opacity: 1, svgOrigin: '18 82', duration: 0.2, ease: 'power3.out' },
             0.34,
           );
         }
 
         if (variant === 'hero') {
-          tl.to(avion, {
-            y: -3,
-            duration: 2.6,
-            repeat: -1,
-            yoyo: true,
-            ease: 'sine.inOut',
-          });
+          const flottement = gsap.to(avion, { y: -3, duration: 2.6, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: 0.6 });
+          const conteneur = conteneurRef.current;
+          const arreter = conteneur ? pauseHorsEcran(conteneur, flottement) : () => {};
+          return () => arreter();
         }
       });
       return () => mm.revert();
@@ -459,55 +171,10 @@ export function AvionTrajectoire({
   );
 }
 
-/**
- * Conteneur animé pour menus déroulants / feuilles d'actions mobiles (zéro translation X).
- */
-export function PanneauDeroulant({
-  children,
-  className,
-  role,
-  'aria-label': ariaLabel,
-  style,
-}: {
-  children: ReactNode;
-  className?: string;
-  role?: string;
-  'aria-label'?: string;
-  style?: CSSProperties;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useGSAP(
-    () => {
-      const el = ref.current;
-      if (!el || typeof window === 'undefined') return;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, mobile: MOBILE_QUERY }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-        const yDepart = ctx.conditions?.mobile ? 12 : -6;
-        gsap.fromTo(
-          el,
-          { y: yDepart, scale: 0.97, opacity: 0.02 },
-          { y: 0, scale: 1, opacity: 1, duration: 0.18, ease: 'power3.out', clearProps: 'transform,opacity' },
-        );
-      });
-      return () => mm.revert();
-    },
-    { scope: ref },
-  );
-
-  return (
-    <div ref={ref} className={className} role={role} aria-label={ariaLabel} style={style}>
-      {children}
-    </div>
-  );
-}
-
 /* ============================================================================
  * V2 — Primitives cinétiques & interactives
  * ============================================================================ */
 
-const EVENEMENT_REJOUER_INTRO = 'wd:rejouer-intro';
 const SELECTEUR_CURSEUR =
   '[data-cursor], a.kpi, .choix-carte, tr.cliquable, .carte-eventail, .btn-primaire';
 
@@ -522,18 +189,22 @@ const ITEMS_MARQUEE_DEFAUT = [
   'ESPACE CLIENT FR / AR',
 ];
 
+/**
+ * L'intro est un moment de marque, pas un passage obligé : jouée automatiquement une seule fois
+ * par session (pas à chaque rechargement d'un outil utilisé toute la journée), jamais sous
+ * mouvement réduit ni pendant les tests automatisés. Toujours rejouable à la demande.
+ */
 function peutJouerIntroAuto(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
   if (navigator.webdriver) return false;
-  return !window.matchMedia(REDUCE_QUERY).matches;
-}
-
-/**
- * Déclenche manuellement le rejeu de l'animation d'ouverture cinétique.
- */
-export function declencherIntroCinetique(): void {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(EVENEMENT_REJOUER_INTRO));
+  if (window.matchMedia(REDUCE_QUERY).matches) return false;
+  try {
+    if (sessionStorage.getItem(CLE_INTRO_VUE)) return false;
+    sessionStorage.setItem(CLE_INTRO_VUE, '1');
+  } catch {
+    // Stockage indisponible : on joue l'intro
+  }
+  return true;
 }
 
 /**
@@ -571,8 +242,9 @@ export function IntroCinetique(): JSX.Element | null {
     }
     gsap.to(el, {
       opacity: 0,
-      duration: 0.22,
-      ease: 'power2.out',
+      duration: 0.15,
+      ease: 'power2.in',
+      overwrite: true,
       onComplete: () => setOuverte(false),
     });
   }, []);
@@ -767,7 +439,9 @@ export function IntroCinetique(): JSX.Element | null {
       };
 
       mm.add({ reduce: REDUCE_QUERY, motion: MOTION_QUERY }, (ctx) => {
-        if (ctx.conditions?.reduce && !estManuel) {
+        if (ctx.conditions?.reduce) {
+          // Mouvement réduit (même pour un rejeu demandé) : simple fondu, aucun éclatement de lettres.
+          void estManuel;
           const tlReduit = gsap.timeline({ onComplete: () => setOuverte(false) });
           timelineRef.current = tlReduit;
           tlReduit
@@ -869,10 +543,11 @@ export function CurseurMagnetique(): JSX.Element | null {
       if (!point || !anneau) return;
 
       gsap.set([point, anneau], { xPercent: -50, yPercent: -50, opacity: 0 });
-      const xPoint = gsap.quickTo(point, 'x', { duration: 0.1, ease: 'power3.out' });
-      const yPoint = gsap.quickTo(point, 'y', { duration: 0.1, ease: 'power3.out' });
-      const xAnneau = gsap.quickTo(anneau, 'x', { duration: 0.32, ease: 'power3.out' });
-      const yAnneau = gsap.quickTo(anneau, 'y', { duration: 0.32, ease: 'power3.out' });
+      // Le point suit le pointeur sans aucun retard (latence zéro) ; seul l'anneau traîne un peu.
+      const xPoint = gsap.quickSetter(point, 'x', 'px') as (v: number) => void;
+      const yPoint = gsap.quickSetter(point, 'y', 'px') as (v: number) => void;
+      const xAnneau = gsap.quickTo(anneau, 'x', { duration: 0.2, ease: 'power3.out' });
+      const yAnneau = gsap.quickTo(anneau, 'y', { duration: 0.2, ease: 'power3.out' });
 
       let visible = false;
       let dernierX = 0;
@@ -1027,59 +702,78 @@ export function BandeauMarquee({
   const conteneurRef = useRef<HTMLDivElement>(null);
   const pisteRef = useRef<HTMLDivElement>(null);
   const tweenRef = useRef<gsap.core.Tween | null>(null);
+  const [enPause, setEnPause] = useState(false);
+  const pauseRef = useRef(false);
+  pauseRef.current = enPause;
+  const [anime, setAnime] = useState(false);
   const liste = items && items.length > 0 ? items : ITEMS_MARQUEE_DEFAUT;
   const signature = liste.join('|');
 
   useGSAP(
     () => {
       const piste = pisteRef.current;
-      if (!piste || typeof window === 'undefined') return;
+      const conteneur = conteneurRef.current;
+      if (!piste || !conteneur || typeof window === 'undefined') return;
       const mm = gsap.matchMedia();
       mm.add({ reduce: REDUCE_QUERY, motion: MOTION_QUERY }, (ctx) => {
-        if (!ctx.conditions?.motion) return;
-        tweenRef.current = gsap.to(piste, {
-          xPercent: -50,
-          duration: Math.max(8, vitesse),
-          ease: 'none',
-          repeat: -1,
-        });
+        if (!ctx.conditions?.motion) { setAnime(false); return; }
+        setAnime(true);
+        const tween = gsap.to(piste, { xPercent: -50, duration: Math.max(8, vitesse), ease: 'none', repeat: -1, paused: pauseRef.current });
+        tweenRef.current = tween;
+        const arreter = pauseHorsEcran(conteneur, tween, () => pauseRef.current);
+        return () => { arreter(); tween.kill(); tweenRef.current = null; setAnime(false); };
       });
-      return () => {
-        tweenRef.current?.kill();
-        tweenRef.current = null;
-        mm.revert();
-      };
+      return () => mm.revert();
     },
     { scope: conteneurRef, dependencies: [vitesse, signature] },
   );
 
+  useEffect(() => {
+    if (enPause) tweenRef.current?.pause(); else tweenRef.current?.resume();
+  }, [enPause]);
+
+  // Survol ou focus clavier : pause temporaire (reprise si l'utilisateur n'a pas mis en pause lui-même).
+  const suspendre = () => tweenRef.current?.pause();
+  const reprendre = () => { if (!pauseRef.current) tweenRef.current?.resume(); };
+
   return (
     <div
       ref={conteneurRef}
-      className={['bandeau-marquee no-print', incline ? 'est-incline' : '', className]
+      className={['bandeau-marquee no-print', incline ? 'est-incline' : '', anime ? 'avec-commande' : '', className]
         .filter(Boolean)
         .join(' ')}
       style={{ direction: 'ltr' }}
+      role="group"
       aria-label="Destinations et programmes phares"
-      onMouseEnter={() => tweenRef.current?.pause()}
-      onMouseLeave={() => tweenRef.current?.resume()}
+      onMouseEnter={suspendre}
+      onMouseLeave={reprendre}
+      onFocus={suspendre}
+      onBlur={reprendre}
     >
       <div ref={pisteRef} className="bandeau-marquee-piste">
         {[0, 1].flatMap((copie) =>
           liste.map((item, idx) => (
-            <span
-              key={`${copie}-${idx}`}
-              className="bandeau-marquee-item"
-              aria-hidden={copie === 1 || undefined}
-            >
+            <span key={`${copie}-${idx}`} className="bandeau-marquee-item" aria-hidden={copie === 1 || undefined}>
               <span>{item}</span>
-              <span className="bandeau-marquee-etoile" aria-hidden="true">
-                ✦
-              </span>
+              <span className="bandeau-marquee-etoile" aria-hidden="true">✦</span>
             </span>
           )),
         )}
       </div>
+      {anime && (
+        <button
+          type="button"
+          className="bandeau-marquee-commande"
+          aria-pressed={enPause}
+          aria-label={enPause ? 'Reprendre le défilement' : 'Mettre en pause le défilement'}
+          title={enPause ? 'Reprendre le défilement' : 'Mettre en pause le défilement'}
+          onClick={() => setEnPause((v) => !v)}
+        >
+          <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" fill="currentColor">
+            {enPause ? <path d="M8 5.5v13l10.5-6.5z" /> : <><rect x="6.5" y="5.5" width="3.8" height="13" rx="1" /><rect x="13.7" y="5.5" width="3.8" height="13" rx="1" /></>}
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
@@ -1113,12 +807,11 @@ export function TitreCinetique({
         if (!cibles.length) return;
         gsap.fromTo(
           cibles,
-          { yPercent: 95, rotateZ: 2.5 },
+          { yPercent: 100 },
           {
             yPercent: 0,
-            rotateZ: 0,
-            duration: 0.6,
-            stagger: 0.045,
+            duration: 0.45,
+            stagger: 0.03,
             ease: 'power4.out',
             clearProps: 'transform',
           },
@@ -1199,13 +892,9 @@ export function SceauRotatif({
       const mm = gsap.matchMedia();
       mm.add({ reduce: REDUCE_QUERY, motion: MOTION_QUERY }, (ctx) => {
         if (!ctx.conditions?.motion) return;
-        gsap.to(anneau, {
-          rotation: 360,
-          duration: 22,
-          ease: 'none',
-          repeat: -1,
-          svgOrigin: '50 50',
-        });
+        const rotation = gsap.to(anneau, { rotation: 360, duration: 22, ease: 'none', repeat: -1, svgOrigin: '50 50' });
+        const racine = scopeRef.current;
+        return racine ? pauseHorsEcran(racine, rotation) : undefined;
       });
       return () => mm.revert();
     },
@@ -1281,28 +970,8 @@ export function EventailCartes({
   className?: string;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
-  const finePointerRef = useRef(false);
   const visibles = cartes.slice(0, 4);
   const [indexActif, setIndexActif] = useState(0);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mqFine = window.matchMedia('(pointer: fine)');
-    const mqReduce = window.matchMedia(REDUCE_QUERY);
-    const mqLarge = window.matchMedia('(min-width: 861px)');
-    const maj = () => {
-      finePointerRef.current = mqFine.matches && !mqReduce.matches && mqLarge.matches;
-    };
-    maj();
-    mqFine.addEventListener('change', maj);
-    mqReduce.addEventListener('change', maj);
-    mqLarge.addEventListener('change', maj);
-    return () => {
-      mqFine.removeEventListener('change', maj);
-      mqReduce.removeEventListener('change', maj);
-      mqLarge.removeEventListener('change', maj);
-    };
-  }, []);
 
   useGSAP(
     () => {
@@ -1316,12 +985,12 @@ export function EventailCartes({
         if (!cards.length) return;
         gsap.fromTo(
           cards,
-          { y: 14, opacity: 0.02 },
+          { y: 12, opacity: 0 },
           {
             y: 0,
             opacity: 1,
-            duration: 0.36,
-            stagger: 0.06,
+            duration: 0.3,
+            stagger: 0.03,
             ease: 'power3.out',
             clearProps: 'transform,opacity',
           },
@@ -1336,36 +1005,6 @@ export function EventailCartes({
 
   const safeIndex = indexActif < visibles.length ? indexActif : 0;
   const actif = visibles[safeIndex];
-
-  const gererSurvolCarte = (e: ReactPointerEvent<HTMLButtonElement>) => {
-    if (!finePointerRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const dx = (e.clientX - rect.left) / rect.width - 0.5;
-    const dy = (e.clientY - rect.top) / rect.height - 0.5;
-    const rotateY = gsap.utils.clamp(-6, 6, dx * 12);
-    const rotateX = gsap.utils.clamp(-6, 6, -dy * 12);
-    gsap.to(e.currentTarget, {
-      rotateX,
-      rotateY,
-      transformPerspective: 900,
-      duration: 0.24,
-      ease: 'power2.out',
-      overwrite: 'auto',
-    });
-  };
-
-  const reinitialiserCarte = (e: ReactPointerEvent<HTMLButtonElement>) => {
-    if (!finePointerRef.current) return;
-    gsap.to(e.currentTarget, {
-      rotateX: 0,
-      rotateY: 0,
-      duration: 0.34,
-      ease: 'power3.out',
-      clearProps: 'transform',
-      overwrite: 'auto',
-    });
-  };
 
   return (
     <section
@@ -1399,8 +1038,6 @@ export function EventailCartes({
               data-cursor="Inspecter ↗"
               style={styleCarte}
               onClick={() => setIndexActif(idx)}
-              onPointerMove={gererSurvolCarte}
-              onPointerLeave={reinitialiserCarte}
             >
               <div className="carte-eventail-haut">
                 <span className="mono">{carte.numero}</span>
@@ -1445,96 +1082,5 @@ export function EventailCartes({
         </Link>
       </div>
     </section>
-  );
-}
-
-/**
- * Bouton flottant de progression du défilement & retour en haut de page.
- */
-export function AnneauDefilement(): JSX.Element {
-  const [visible, setVisible] = useState(false);
-  const cercleRef = useRef<SVGCircleElement>(null);
-  const rayon = 18;
-  const circonference = 2 * Math.PI * rayon;
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    let rafId = 0;
-
-    const mettreAJour = () => {
-      rafId = 0;
-      const y = window.scrollY || document.documentElement.scrollTop || 0;
-      const maxScroll = Math.max(
-        0,
-        document.documentElement.scrollHeight - window.innerHeight,
-      );
-      const ratio = maxScroll > 0 ? Math.min(1, Math.max(0, y / maxScroll)) : 0;
-      if (cercleRef.current) {
-        cercleRef.current.style.strokeDashoffset = String(circonference * (1 - ratio));
-      }
-      setVisible(y > 160);
-    };
-
-    const surScroll = () => {
-      if (!rafId) rafId = window.requestAnimationFrame(mettreAJour);
-    };
-
-    mettreAJour();
-    window.addEventListener('scroll', surScroll, { passive: true });
-    window.addEventListener('resize', surScroll, { passive: true });
-    return () => {
-      if (rafId) window.cancelAnimationFrame(rafId);
-      window.removeEventListener('scroll', surScroll);
-      window.removeEventListener('resize', surScroll);
-    };
-  }, [circonference]);
-
-  const remonter = () => {
-    if (typeof window === 'undefined') return;
-    const reduce = window.matchMedia(REDUCE_QUERY).matches;
-    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
-  };
-
-  return (
-    <button
-      type="button"
-      className={`anneau-defilement no-print${visible ? ' est-visible' : ''}`}
-      aria-label="Remonter en haut"
-      aria-hidden={!visible}
-      tabIndex={visible ? 0 : -1}
-      style={{
-        opacity: visible ? undefined : 0,
-        pointerEvents: visible ? undefined : 'none',
-      }}
-      onClick={remonter}
-    >
-      <svg viewBox="0 0 44 44" width="44" height="44" aria-hidden="true">
-        <circle
-          cx="22"
-          cy="22"
-          r={rayon}
-          fill="none"
-          stroke="currentColor"
-          strokeOpacity="0.18"
-          strokeWidth="2.5"
-        />
-        <circle
-          ref={cercleRef}
-          cx="22"
-          cy="22"
-          r={rayon}
-          fill="none"
-          stroke="#2EC4DC"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeDasharray={circonference}
-          strokeDashoffset={circonference}
-          transform="rotate(-90 22 22)"
-        />
-      </svg>
-      <span className="anneau-fleche" aria-hidden="true">
-        ↑
-      </span>
-    </button>
   );
 }

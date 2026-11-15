@@ -1,16 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ErreurMetier } from '../lib/store';
 import type { StatutDocument, StatutDossier } from '../lib/types';
 import { Icone, type NomIcone } from './Icone';
+import { animer, copieDeSortie, DUREE, EASE_IN, EASE_OUT, ecranEtroit, elastique, entree, mouvementReduit, projeter, ressort } from './mouvement';
 
 export { Icone } from './Icone';
-
-gsap.registerPlugin(useGSAP);
-
-const REDUCE_QUERY = '(prefers-reduced-motion: reduce)';
-const MOBILE_QUERY = '(max-width: 640px)';
 
 /* ---------- Toast ---------- */
 type Toast = { id: number; texte: string; erreur?: boolean };
@@ -47,27 +41,23 @@ export function ZoneToast() {
     };
   }, []);
 
-  useGSAP(
-    () => {
-      const el = toastRef.current;
-      if (!el || !t || typeof window === 'undefined') return;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, motion: '(prefers-reduced-motion: no-preference)' }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-        gsap.fromTo(
-          el,
-          { y: 12, scale: 0.96, opacity: 0.02 },
-          { y: 0, scale: 1, opacity: 1, duration: 0.22, ease: 'back.out(1.25)', clearProps: 'transform,opacity' },
-        );
-      });
-      return () => mm.revert();
-    },
-    { scope: toastRef, dependencies: [t?.id], revertOnUpdate: true },
-  );
+  // Entrée : monte de 12 px depuis le bas (d'où il sortira), sans rebond.
+  // Sortie : copie inerte qui redescend, plus vite que l'entrée.
+  useLayoutEffect(() => {
+    const el = toastRef.current;
+    if (!el) return;
+    animer(el, [{ opacity: 0, transform: 'translate3d(0, 12px, 0) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: DUREE.d200, easing: EASE_OUT });
+    return () => {
+      if (!el.isConnected) return;
+      const copie = copieDeSortie(el);
+      const a = animer(copie, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0, 8px, 0)' }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' });
+      if (a) a.onfinish = () => copie.remove(); else copie.remove();
+    };
+  }, [t?.id]);
 
   if (!t) return null;
   return (
-    <div ref={toastRef} className={`toast ${t.erreur ? 'erreur-toast' : ''}`} role="status">
+    <div ref={toastRef} key={t.id} className={`toast ${t.erreur ? 'erreur-toast' : ''}`} role="status">
       <Icone nom={t.erreur ? 'alerte' : 'coche'} taille={16} />
       <span>{t.texte}</span>
     </div>
@@ -81,6 +71,14 @@ let compteurModale = 0;
 /**
  * Fenêtre modale accessible : nom = titre (aria-labelledby), focus piégé dans la fenêtre,
  * Échap ferme, le focus revient sur le bouton d'origine, le défilement de la page est bloqué.
+ *
+ * Mouvement (skill apple-design) :
+ * - ordinateur : apparition courte (échelle .97 → 1 + fondu, 200 ms), sortie plus rapide (150 ms) ;
+ * - téléphone : feuille qui monte du bas avec un ressort sans rebond. On peut la saisir à tout
+ *   moment (même pendant son entrée) par la poignée ou le titre : elle suit le doigt 1:1, résiste
+ *   au-delà du haut, et se ferme si le geste projeté dépasse la moitié de sa hauteur ; sinon elle
+ *   revient en place en gardant la vitesse du doigt. Sortie par le même chemin (vers le bas) ;
+ * - mouvement réduit : fondu court, aucune translation.
  */
 export function Modale({
   titre,
@@ -96,15 +94,27 @@ export function Modale({
   large?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const fondRef = useRef<HTMLDivElement>(null);
   const fermer = useRef(onFermer);
   fermer.current = onFermer;
   const [idTitre] = useState(() => `modale-titre-${++compteurModale}`);
+  const [feuille] = useState(() => ecranEtroit() && !mouvementReduit());
+  const etat = useRef({ y: 0, h: 0, stop: () => {}, fermeeParGeste: false });
+
+  const rendre = (y: number) => {
+    const e = etat.current;
+    e.y = y;
+    const boite = ref.current;
+    const fond = fondRef.current;
+    if (boite) boite.style.transform = y ? `translate3d(0, ${y}px, 0)` : '';
+    if (fond && e.h) fond.style.setProperty('--voile-opacite', String(Math.max(0, Math.min(1, 1 - y / e.h))));
+  };
 
   useEffect(() => {
     const precedent = document.activeElement as HTMLElement | null;
     const boite = ref.current;
     const premier = boite?.querySelector<HTMLElement>('[data-focus-initial], input:not([type="checkbox"]), select, textarea') ?? boite?.querySelector<HTMLElement>(FOCUSABLES);
-    (premier ?? boite)?.focus();
+    (premier ?? boite)?.focus({ preventScroll: true });
     const debordement = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const clavier = (e: KeyboardEvent) => {
@@ -120,33 +130,86 @@ export function Modale({
     return () => {
       document.removeEventListener('keydown', clavier);
       document.body.style.overflow = debordement;
-      if (precedent?.isConnected) precedent.focus();
+      if (precedent?.isConnected) precedent.focus({ preventScroll: true });
     };
   }, []);
 
-  useGSAP(
-    () => {
-      const boite = ref.current;
-      if (!boite || typeof window === 'undefined') return;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, mobile: MOBILE_QUERY }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-        const mobile = Boolean(ctx.conditions?.mobile);
-        gsap.fromTo(
-          boite,
-          { y: mobile ? 22 : 14, scale: mobile ? 1 : 0.975, opacity: 0.02 },
-          { y: 0, scale: 1, opacity: 1, duration: 0.22, ease: 'power3.out', clearProps: 'transform,opacity' },
-        );
-      });
-      return () => mm.revert();
-    },
-    { scope: ref },
-  );
+  // Entrée, puis sortie symétrique (copie inerte) quel que soit le chemin de fermeture.
+  useLayoutEffect(() => {
+    const boite = ref.current!;
+    const fond = fondRef.current!;
+    const e = etat.current;
+    if (feuille) {
+      e.h = boite.offsetHeight;
+      rendre(e.h);
+      e.stop = ressort(e.h, 0, rendre, { reponse: 0.35 });
+    } else {
+      animer(boite, [{ opacity: 0, transform: 'translate3d(0, 8px, 0) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: DUREE.d200, easing: EASE_OUT });
+      animer(fond, [{ opacity: 0 }, { opacity: 1 }], { duration: DUREE.d200, easing: EASE_OUT });
+    }
+    return () => {
+      e.stop();
+      if (e.fermeeParGeste || !fond.isConnected) return; // déjà hors de l'écran
+      const copie = copieDeSortie(fond);
+      const b = copie.querySelector<HTMLElement>('.modal');
+      if (feuille && b) {
+        const h = e.h || boite.offsetHeight;
+        ressort(e.y, h, (y) => {
+          b.style.transform = `translate3d(0, ${y}px, 0)`;
+          copie.style.setProperty('--voile-opacite', String(Math.max(0, 1 - y / h)));
+        }, { reponse: 0.28, fin: () => copie.remove() });
+      } else {
+        animer(b, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.98)' }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' });
+        const a = animer(copie, [{ opacity: 1 }, { opacity: 0 }], { duration: DUREE.d150, easing: EASE_IN, fill: 'forwards' });
+        if (a) a.onfinish = () => copie.remove(); else copie.remove();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Glisser vers le bas pour fermer (poignée + titre), avec capture du pointeur.
+  const suivi = useRef<{ decalage: number; points: { y: number; t: number }[]; id: number; engage: boolean; y0: number } | null>(null);
+  const appui = (ev: React.PointerEvent<HTMLDivElement>) => {
+    if (!feuille || ev.button > 0 || (ev.target as HTMLElement).closest('button, a, input, select, textarea')) return;
+    const e = etat.current;
+    e.stop(); // on saisit la feuille là où elle est, même en plein mouvement
+    e.h = ref.current!.offsetHeight;
+    ev.currentTarget.setPointerCapture(ev.pointerId);
+    suivi.current = { decalage: ev.clientY - e.y, points: [{ y: ev.clientY, t: ev.timeStamp }], id: ev.pointerId, engage: false, y0: ev.clientY };
+  };
+  const deplacement = (ev: React.PointerEvent<HTMLDivElement>) => {
+    const s = suivi.current;
+    if (!s || ev.pointerId !== s.id) return;
+    if (!s.engage && Math.abs(ev.clientY - s.y0) < 4) return; // petite hystérésis : un simple toucher ne bouge rien
+    s.engage = true;
+    const brut = ev.clientY - s.decalage;
+    rendre(brut < 0 ? elastique(brut, etat.current.h) : brut);
+    s.points.push({ y: ev.clientY, t: ev.timeStamp });
+    if (s.points.length > 5) s.points.shift();
+  };
+  const relache = (ev: React.PointerEvent<HTMLDivElement>) => {
+    const s = suivi.current;
+    if (!s || ev.pointerId !== s.id) return;
+    suivi.current = null;
+    const e = etat.current;
+    const [p0, p1] = [s.points[0], s.points[s.points.length - 1]];
+    const dt = (p1.t - p0.t) / 1000;
+    const vitesse = dt > 0.008 ? (p1.y - p0.y) / dt : 0; // px/s
+    if (e.y + projeter(vitesse) > e.h * 0.5) {
+      e.stop = ressort(e.y, e.h, rendre, { reponse: 0.28, vitesse: Math.max(vitesse, 0), fin: () => { e.fermeeParGeste = true; fermer.current(); } });
+    } else {
+      // Retour en place : léger amortissement < 1 car le geste portait de l'élan.
+      e.stop = ressort(e.y, 0, rendre, { amortissement: 0.85, reponse: 0.3, vitesse });
+    }
+  };
 
   return (
-    <div className="modal-fond" onMouseDown={(e) => e.target === e.currentTarget && onFermer()}>
+    <div className={`modal-fond${feuille ? ' en-feuille' : ''}`} ref={fondRef} onMouseDown={(e) => e.target === e.currentTarget && onFermer()}>
       <div className={`modal ${large ? 'large' : ''}`} role="dialog" aria-modal="true" aria-labelledby={idTitre} ref={ref} tabIndex={-1}>
-        <h2 id={idTitre}>{titre}</h2>
+        <div className="modal-tete" onPointerDown={appui} onPointerMove={deplacement} onPointerUp={relache} onPointerCancel={relache}>
+          <span className="modal-poignee" aria-hidden="true" />
+          <h2 id={idTitre}>{titre}</h2>
+        </div>
         {sousTitre && <p className="muted petit" style={{ marginTop: -8, marginBottom: 'var(--esp-3)' }}>{sousTitre}</p>}
         {children}
       </div>
@@ -170,23 +233,13 @@ export function Onglets<K extends string>({ valeur, onChanger, onglets, label, c
     liste.current?.querySelectorAll<HTMLElement>('[role="tab"]')[j]?.focus();
   };
 
-  useGSAP(
-    () => {
-      const el = panneauRef.current;
-      if (!el || typeof window === 'undefined') return;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, motion: '(prefers-reduced-motion: no-preference)' }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-        gsap.fromTo(
-          el,
-          { y: 6, opacity: 0.02 },
-          { y: 0, opacity: 1, duration: 0.18, ease: 'power2.out', clearProps: 'transform,opacity' },
-        );
-      });
-      return () => mm.revert();
-    },
-    { scope: panneauRef, dependencies: [valeur], revertOnUpdate: true },
-  );
+  // Changement d'onglet : action fréquente, donc fondu très court (150 ms) et 4 px seulement.
+  const premierRendu = useRef(true);
+  useLayoutEffect(() => {
+    if (premierRendu.current) { premierRendu.current = false; return; }
+    const a = entree(panneauRef.current, { y: 4, duree: DUREE.d150 });
+    return () => a?.cancel();
+  }, [valeur]);
 
   return (
     <>
@@ -223,23 +276,13 @@ export function Barre({ pourcent, label, animee = true }: { pourcent: number; la
   const fillRef = useRef<HTMLDivElement>(null);
   const clamped = Math.max(0, Math.min(100, pourcent));
 
-  useGSAP(
-    () => {
-      const el = fillRef.current;
-      if (!el || !animee || clamped <= 0 || typeof window === 'undefined') return;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, motion: '(prefers-reduced-motion: no-preference)' }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-        gsap.fromTo(
-          el,
-          { scaleX: 0 },
-          { scaleX: 1, duration: 0.3, ease: 'power2.out', clearProps: 'transform' },
-        );
-      });
-      return () => mm.revert();
-    },
-    { scope: fillRef },
-  );
+  // Remplissage à la première apparition seulement (transform, aucun recalcul de mise en page).
+  useLayoutEffect(() => {
+    if (!animee || clamped <= 0) return;
+    const a = animer(fillRef.current, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: DUREE.d300, easing: EASE_OUT });
+    return () => a?.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="barre" role="progressbar" aria-label={label ?? 'Avancement'} aria-valuenow={pourcent} aria-valuemin={0} aria-valuemax={100}>
@@ -252,23 +295,10 @@ export function Barre({ pourcent, label, animee = true }: { pourcent: number; la
 export function Vide({ children, icone, action }: { children: ReactNode; icone?: NomIcone; action?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
 
-  useGSAP(
-    () => {
-      const el = ref.current;
-      if (!el || typeof window === 'undefined') return;
-      const mm = gsap.matchMedia();
-      mm.add({ reduce: REDUCE_QUERY, motion: '(prefers-reduced-motion: no-preference)' }, (ctx) => {
-        if (ctx.conditions?.reduce) return;
-        gsap.fromTo(
-          el,
-          { y: 6, opacity: 0.02 },
-          { y: 0, opacity: 1, duration: 0.2, ease: 'power2.out', clearProps: 'transform,opacity' },
-        );
-      });
-      return () => mm.revert();
-    },
-    { scope: ref },
-  );
+  useLayoutEffect(() => {
+    const a = entree(ref.current, { y: 6, duree: DUREE.d200 });
+    return () => a?.cancel();
+  }, []);
 
   return (
     <div ref={ref} className="vide">
