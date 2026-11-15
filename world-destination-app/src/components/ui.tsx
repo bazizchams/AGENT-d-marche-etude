@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { ErreurMetier } from '../lib/store';
 import type { StatutDocument, StatutDossier } from '../lib/types';
 import { Icone, type NomIcone } from './Icone';
-import { animer, retirerALaFin, sortieSiRetire, DUREE, EASE_IN, EASE_OUT, ecranEtroit, elastique, entree, mouvementReduit, projeter, ressort } from './mouvement';
+import { animer, dansEntreeEcran, retirerALaFin, sortieSiRetire, DUREE, EASE_IN, EASE_OUT, ecranEtroit, elastique, mouvementReduit, projeter, ressort } from './mouvement';
 
 export { Icone } from './Icone';
 
@@ -235,13 +235,8 @@ export function Onglets<K extends string>({ valeur, onChanger, onglets, label, c
     liste.current?.querySelectorAll<HTMLElement>('[role="tab"]')[j]?.focus();
   };
 
-  // Changement d'onglet : action fréquente, donc fondu très court (150 ms) et 4 px seulement.
-  const premierRendu = useRef(true);
-  useLayoutEffect(() => {
-    if (premierRendu.current) { premierRendu.current = false; return; }
-    const a = entree(panneauRef.current, { y: 4, duree: DUREE.d150 });
-    return () => a?.cancel();
-  }, [valeur]);
+  // Changement d'onglet : action fréquente (plusieurs fois par dossier) → aucune animation du
+  // contenu ; seul l'indicateur d'onglet actif change (skills choreograph / emil-design-eng).
 
   return (
     <>
@@ -280,7 +275,7 @@ export function Barre({ pourcent, label, animee = true }: { pourcent: number; la
 
   // Remplissage à la première apparition seulement (transform, aucun recalcul de mise en page).
   useLayoutEffect(() => {
-    if (!animee || clamped <= 0) return;
+    if (!animee || clamped <= 0 || !dansEntreeEcran()) return; // seulement à l'arrivée d'un écran
     const a = animer(fillRef.current, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: DUREE.d300, easing: EASE_OUT });
     return () => a?.cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -297,8 +292,10 @@ export function Barre({ pourcent, label, animee = true }: { pourcent: number; la
 export function Vide({ children, icone, action }: { children: ReactNode; icone?: NomIcone; action?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
 
+  // État vide : décoration → fondu seul, et seulement à l'arrivée d'un écran.
   useLayoutEffect(() => {
-    const a = entree(ref.current, { y: 6, duree: DUREE.d200 });
+    if (!dansEntreeEcran()) return;
+    const a = animer(ref.current, [{ opacity: 0 }, { opacity: 1 }], { duration: DUREE.d200, delay: 60, easing: EASE_OUT, fill: 'backwards' });
     return () => a?.cancel();
   }, []);
 

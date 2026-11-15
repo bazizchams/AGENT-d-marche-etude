@@ -12,7 +12,7 @@ import {
   type JSX,
   type ReactNode,
 } from 'react';
-import { cascade, DUREE, EASE_IN, EASE_OUT, animer, entree, mouvementReduit, retirerALaFin, sortieSiRetire } from './mouvement';
+import { animer, cascade, DUREE, EASE_IN, EASE_OUT, mouvementReduit, retirerALaFin, signalerEntreeEcran, sortieSiRetire } from './mouvement';
 
 function selectionnerCibles(racine: HTMLElement, selecteur: string): Element[] {
   const s = selecteur.trim();
@@ -20,11 +20,16 @@ function selectionnerCibles(racine: HTMLElement, selecteur: string): Element[] {
   return Array.from(racine.querySelectorAll(s.startsWith('>') ? `:scope ${s}` : s));
 }
 
-/** Entrée de page ou de panneau : légère montée, jamais de visibility:hidden (focus et clics dès la 1re image). */
+/**
+ * Arrivée d'un écran : fondu croisé court (150 ms, opacité seule) — c'est le conteneur, il porte
+ * son contenu ; le mouvement vertical est laissé aux cascades internes (une seule couche de
+ * déplacement). Jamais de visibility:hidden : focus et clics possibles dès la 1re image.
+ */
 export function EntreePage({ children, className, cle, style }: { children: ReactNode; className?: string; cle?: string | number; style?: CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    const a = entree(ref.current, { y: 8, duree: DUREE.d200 });
+    signalerEntreeEcran();
+    const a = animer(ref.current, [{ opacity: 0 }, { opacity: 1 }], { duration: DUREE.d150, easing: EASE_OUT });
     return () => a?.cancel();
   }, [cle]);
   return <div ref={ref} className={className} style={style}>{children}</div>;
@@ -48,7 +53,7 @@ export function StaggerListe({
 }) {
   const ref = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
-    if (ref.current) cascade(selectionnerCibles(ref.current, selecteur), { y: 6, duree: DUREE.d200, pas: 25 });
+    if (ref.current) cascade(selectionnerCibles(ref.current, selecteur), { y: 6, duree: DUREE.d200 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const props = { ref: ref as never, className, style, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledBy };
@@ -84,8 +89,8 @@ function formaterJeton(valeur: number, j: JetonNombre): string {
 
 /**
  * Compteur KPI : la valeur réelle est dans le DOM dès la 1re image (lecteurs d'écran, tests).
- * - par défaut : arrivée verticale courte façon odomètre ;
- * - `compteDepuisZero` : interpolation de 0 à la cible (nombres ou montants multi-devises).
+ * - par défaut : valeur fixe (elle arrive avec sa carte) ;
+ * - `compteDepuisZero` : interpolation de 0 à la cible (nombres ou montants multi-devises), 300 ms.
  * Les chiffres sont tabulaires : aucune largeur ne bouge pendant le comptage.
  */
 export function CompteurAnime({ valeur, format, duree = 0.3, compteDepuisZero = false, className }: {
@@ -98,11 +103,9 @@ export function CompteurAnime({ valeur, format, duree = 0.3, compteDepuisZero = 
     const el = ref.current;
     if (!el) return;
     el.textContent = renduFinal;
-    if (!compteDepuisZero) {
-      const a = animer(el, [{ opacity: 0, transform: 'translate3d(0, 6px, 0)' }, { opacity: 1, transform: 'none' }], { duration: DUREE.d200, easing: EASE_OUT });
-      return () => a?.cancel();
-    }
-    if (mouvementReduit()) return;
+    // Valeur simple : affichée telle quelle (donnée fonctionnelle ; la carte qui la contient a
+    // déjà son entrée — pas de seconde couche). Montant : comptage court, une fois, à l'arrivée.
+    if (!compteDepuisZero || mouvementReduit()) return;
     const jetons = extraireJetons(renduFinal);
     if (!jetons.length) return;
     const t0 = performance.now();

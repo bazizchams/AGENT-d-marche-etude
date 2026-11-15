@@ -48,11 +48,28 @@ export function entree(el: Element | null | undefined, { y = 8, duree = DUREE.d2
   ], { duration: duree, delay: delai, easing: EASE_OUT, fill: 'backwards' });
 }
 
-/** Cascade plafonnée : ≤ 30 ms par élément et ≤ 200 ms au total (au-delà, tout arrive ensemble). */
-export function cascade(cibles: Element[], { y = 8, duree = DUREE.d200, pas = 30, echelle = 1 }: { y?: number; duree?: number; pas?: number; echelle?: number } = {}) {
+/**
+ * Chorégraphie (skill choreograph) : une seule entrée par écran. Les cascades, états vides et
+ * barres ne s'animent que s'ils font partie de l'arrivée d'un écran (montés dans les ~150 ms qui
+ * suivent). Un changement d'onglet, un filtre ou une mise à jour de liste : tout apparaît d'un coup.
+ */
+let derniereEntreeEcran = -Infinity;
+export const signalerEntreeEcran = () => { derniereEntreeEcran = performance.now(); };
+export const dansEntreeEcran = () => performance.now() - derniereEntreeEcran < 150;
+
+/**
+ * Cascade non uniforme : écarts qui rétrécissent (≈ 40 ms puis de moins en moins), total ≤ 200 ms,
+ * 12 éléments au plus ; le premier (rôle « lead ») monte un peu plus que les suivants.
+ */
+export function cascade(cibles: Element[], { y = 8, duree = DUREE.d200, echelle = 1 }: { y?: number; duree?: number; pas?: number; echelle?: number } = {}) {
+  if (!dansEntreeEcran()) return;
   const n = Math.min(cibles.length, 12);
-  const step = n > 1 ? Math.min(pas, 200 / (n - 1)) : 0;
-  cibles.forEach((c, i) => entree(c, { y, duree, delai: i < n ? i * step : 0, echelle }));
+  const total = Math.min(200, 40 * (n - 1));
+  cibles.forEach((c, i) => {
+    const t = n > 1 ? Math.min(i, n - 1) / (n - 1) : 0;
+    const delai = Math.round(total * (1 - (1 - t) ** 1.7));
+    entree(c, { y: i === 0 ? y + 4 : y, duree, delai, echelle });
+  });
 }
 
 /* ---------------- Ressorts (feuilles glissables) ---------------- */
