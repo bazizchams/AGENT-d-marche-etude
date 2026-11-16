@@ -174,7 +174,8 @@ export function alertes(base: Base, ref = new Date()) {
 
 export function montant(v: number, devise: Devise) {
   const n = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(v);
-  return devise === 'DZD' ? `${n} DA` : `${n} ${devise === 'EUR' ? '€' : '$ CA'}`;
+  // Espaces insécables : un montant ne se coupe jamais en fin de ligne (« 75 » / « € »).
+  return devise === 'DZD' ? `${n}\u00a0DA` : `${n}\u00a0${devise === 'EUR' ? '€' : '$\u00a0CA'}`;
 }
 
 export function formatSoldes(s: Soldes, cle: 'du' | 'paye' | 'reste') {
