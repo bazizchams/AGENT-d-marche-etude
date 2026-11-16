@@ -148,7 +148,7 @@ export default function EcranConnexion({ client = false }: { client?: boolean })
                 <img src="./logo.png" alt="Logo World Destination" />
               </div>
               <div style={{ minWidth: 0 }}>
-                <TitreCinetique as="h1" texte="World Destination" />
+                <TitreCinetique as="h1" texte="World Destination" accentMot="Destination" cibleIntro />
                 <p>{client ? t.titreClient : t.titre}</p>
               </div>
             </div>

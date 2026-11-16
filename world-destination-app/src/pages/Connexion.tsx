@@ -28,7 +28,7 @@ function ConnexionDemo() {
                 <img src="./logo.png" alt="Logo World Destination" />
               </div>
               <div style={{ minWidth: 0 }}>
-                <TitreCinetique as="h1" texte="World Destination" />
+                <TitreCinetique as="h1" texte="World Destination" accentMot="Destination" cibleIntro />
                 <p>Gestion des dossiers clients</p>
               </div>
             </div>

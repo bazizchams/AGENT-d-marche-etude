@@ -4,7 +4,9 @@
  * et respectent le mouvement réduit (fondu court ou rien).
  */
 import {
+  Fragment,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -12,6 +14,7 @@ import {
   type JSX,
   type ReactNode,
 } from 'react';
+import { Link } from 'react-router-dom';
 import { animer, cascade, DUREE, EASE_IN, EASE_OUT, mouvementReduit, retirerALaFin, signalerEntreeEcran, sortieSiRetire } from './mouvement';
 
 function selectionnerCibles(racine: HTMLElement, selecteur: string): Element[] {
@@ -219,9 +222,6 @@ export function AnneauDefilement(): JSX.Element {
  * Pièces « signature » sans GSAP (WAAPI + CSS sur le compositeur)
  * ===================================================================== */
 
-import { Fragment, useId } from 'react';
-import { Link } from 'react-router-dom';
-import { dansEntreeEcran, entree } from './mouvement';
 
 /** Vrai si l'intro de lancement est en train de jouer (les titres attendent alors d'être « posés » par elle). */
 export const introEnCours = () => typeof document !== 'undefined' && document.documentElement.hasAttribute('data-intro');
@@ -247,8 +247,6 @@ export function TitreCinetique({ texte, as = 'h1', className, accentMot, anime =
       animer(m, [{ transform: 'translate3d(0, 105%, 0)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 450, delay: delai, easing: EASE_OUT, fill: 'backwards' });
     });
     el.querySelectorAll<HTMLElement>('.mot-accent').forEach((acc) => {
-      if (!mouvementReduit()) acc.classList.add('balayage-pret');
-      animer(acc, [{ '--balayage': '0' } as Keyframe, { '--balayage': '1' } as Keyframe], { duration: 0 }); // no-op (compatibilité)
       const trait = acc.querySelector<HTMLElement>('.mot-surlignage');
       animer(trait, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 420, delay: 260 + 40 * n, easing: 'cubic-bezier(0.77, 0, 0.175, 1)', fill: 'backwards' });
     });
@@ -455,4 +453,3 @@ export function EventailCartes({ cartes, titre = 'Dossiers sous les projecteurs'
   );
 }
 
-void dansEntreeEcran; void entree;

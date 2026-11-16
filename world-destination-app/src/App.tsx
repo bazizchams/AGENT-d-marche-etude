@@ -27,17 +27,20 @@ function IntroALaDemande() {
         && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     } catch { return false; }
   });
+  // Demandée par le bouton avant le chargement du module : l'intro démarre d'elle-même une fois chargée
+  // (un événement relancé après un délai fixe arrivait parfois avant la fin du chargement).
+  const [demandee, setDemandee] = useState(false);
   useEffect(() => {
+    if (charger) return;
     const surRejeu = () => {
-      if (charger) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      setDemandee(true);
       setCharger(true);
-      // Le composant n'écoutait pas encore : on relance l'événement une fois monté.
-      window.setTimeout(() => window.dispatchEvent(new CustomEvent(EVENEMENT_REJOUER_INTRO)), 50);
     };
     window.addEventListener(EVENEMENT_REJOUER_INTRO, surRejeu);
     return () => window.removeEventListener(EVENEMENT_REJOUER_INTRO, surRejeu);
   }, [charger]);
-  return charger ? <Suspense fallback={null}><IntroCinetique /></Suspense> : null;
+  return charger ? <Suspense fallback={null}><IntroCinetique ouvrirAuMontage={demandee} /></Suspense> : null;
 }
 
 /** Curseur personnalisé : seulement avec une souris, sans mouvement réduit, sur grand écran. */
