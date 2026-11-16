@@ -13,9 +13,8 @@
   pour un compte inconnu.
 
 ## Reste à faire
-1. Publier le site (Vercel) avec `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` (clé publique « anon »).
-2. Avec l'adresse du site : Supabase › Auth › Site URL + Redirect URLs (adresse exacte, sans `*`),
-   et le secret `APP_URL` de la fonction `inviter-client`.
+1. ✅ Site publié : https://world-destination.vercel.app (Vercel, projet `world-destination`), en-têtes de sécurité actifs.
+2. ✅ Supabase : Site URL + Redirect URLs = https://world-destination.vercel.app ; secret `APP_URL` posé pour `inviter-client`.
 3. Créer les 4 comptes du personnel (Authentication › Users › Add user, « Auto Confirm »), puis leur donner
    nom et rôle :
    `update profils set nom = '…', role = 'admin' where email = '…';` (role : 'admin' ou 'agent').
