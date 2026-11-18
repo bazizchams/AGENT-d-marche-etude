@@ -3,6 +3,7 @@ import { HashRouter, NavLink, Navigate, Route, Routes, useLocation } from 'react
 import { Icone, type NomIcone } from './components/Icone';
 import { AnneauDefilement, declencherIntroCinetique, EVENEMENT_REJOUER_INTRO } from './components/MotionLeger';
 import { ZoneToast } from './components/ui';
+import { BoutonMotDePasse } from './components/MotDePasse';
 import { deconnexion, modeEnLigne, useUtilisateur } from './lib/store';
 // Écrans chargés à la demande : le bundle initial ne contient que la coquille.
 // GSAP (pièces « signature ») n'est téléchargé qu'avec les écrans qui l'utilisent.
@@ -153,6 +154,7 @@ function Coquille() {
         >
           <Icone nom={infoTheme.icone} taille={20} />
         </button>
+        <BoutonMotDePasse icone />
         <button type="button" onClick={deconnexion} aria-label={`Se déconnecter (${user.nom})`} title="Se déconnecter">
           <Icone nom="sortie" taille={22} />
         </button>
@@ -200,6 +202,7 @@ function Coquille() {
             <Icone nom="avion" taille={15} />
             <span>Animation d&apos;intro</span>
           </button>
+          <BoutonMotDePasse />
           <button type="button" onClick={deconnexion}><Icone nom="sortie" taille={16} /> Se déconnecter</button>
         </div>
       </aside>
