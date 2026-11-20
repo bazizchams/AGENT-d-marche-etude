@@ -159,6 +159,10 @@ export async function envoyerLienMagique(email: string): Promise<void> {
   return (await moduleEnLigne()).envoyerLienMagique(email);
 }
 
+export async function reinitialiserMotDePasse(email: string): Promise<void> {
+  return (await moduleEnLigne()).reinitialiserMotDePasse(email);
+}
+
 export async function changerMotDePasse(nouveau: string): Promise<void> {
   return (await moduleEnLigne()).changerMotDePasse(nouveau);
 }

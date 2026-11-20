@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { changerMotDePasse, modeEnLigne } from '../lib/store';
 import { Icone } from './Icone';
 import { Modale, notifier } from './ui';
@@ -20,6 +21,11 @@ function problemes(mdp: string): string[] {
  */
 export function BoutonMotDePasse({ icone = false }: { icone?: boolean }) {
   const [ouvert, setOuvert] = useState(false);
+  // Arrivée par un lien « Mot de passe oublié » : la fenêtre s'ouvre d'elle-même (une seule instance : le bouton texte).
+  useEffect(() => {
+    if (!modeEnLigne || icone) return;
+    try { if (sessionStorage.getItem('wd-mdp-a-choisir')) setOuvert(true); } catch { /* ignore */ }
+  }, [icone]);
   if (!modeEnLigne) return null;
   return (
     <>
@@ -30,7 +36,7 @@ export function BoutonMotDePasse({ icone = false }: { icone?: boolean }) {
       ) : (
         <button type="button" onClick={() => setOuvert(true)}><Icone nom="cadenas" taille={16} /> Mon mot de passe</button>
       )}
-      {ouvert && <ModaleMotDePasse onFermer={() => setOuvert(false)} />}
+      {ouvert && createPortal(<ModaleMotDePasse onFermer={() => setOuvert(false)} />, document.body)}
     </>
   );
 }

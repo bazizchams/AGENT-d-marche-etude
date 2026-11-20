@@ -262,12 +262,19 @@ export async function reporterMfa(): Promise<void> {
 }
 
 /** Lien reçu par e-mail au format « ?token_hash=…&type=… » (modèles d'e-mail personnalisés). */
+/** Drapeau posé par un lien « Mot de passe oublié » : la fenêtre « Mon mot de passe » s'ouvre après connexion. */
+export const CLE_MDP_A_CHOISIR = 'wd-mdp-a-choisir';
+
+/** Limite d'envoi d'e-mails de Supabase (offre gratuite : quelques e-mails par heure). */
+const MESSAGE_LIMITE_EMAILS = "Trop d'e-mails ont été envoyés récemment : réessayez dans une heure (ou demandez à un administrateur).";
+
 async function verifierLienEmail() {
   const p = new URLSearchParams(location.search);
   const tokenHash = p.get('token_hash');
   const type = p.get('type');
   if (!tokenHash || !type) return;
-  const { error } = await supabase().auth.verifyOtp({ token_hash: tokenHash, type: type as 'magiclink' | 'invite' | 'email' });
+  if (type === 'recovery') { try { sessionStorage.setItem(CLE_MDP_A_CHOISIR, '1'); } catch { /* ignore */ } }
+  const { error } = await supabase().auth.verifyOtp({ token_hash: tokenHash, type: type as 'magiclink' | 'invite' | 'email' | 'recovery' });
   history.replaceState(null, '', location.pathname + location.hash);
   if (error) pont.erreur('Ce lien de connexion a expiré ou a déjà servi. Demandez-en un nouveau.');
 }
@@ -286,6 +293,8 @@ async function lireJetonsDansAdresse() {
     return;
   }
   if (!access || !refresh) return;
+  // Lien « Mot de passe oublié » : l'application ouvrira la fenêtre « Mon mot de passe » une fois connecté.
+  if (h.get('type') === 'recovery') { try { sessionStorage.setItem(CLE_MDP_A_CHOISIR, '1'); } catch { /* ignore */ } }
   history.replaceState(null, '', location.pathname + location.search);
   const { error } = await supabase().auth.setSession({ access_token: access, refresh_token: refresh });
   if (error) pont.erreur('Ce lien de connexion a expiré ou a déjà servi. Demandez-en un nouveau.');
@@ -326,6 +335,7 @@ export async function envoyerLienMagique(email: string): Promise<void> {
     options: { shouldCreateUser: false, emailRedirectTo: retour() },
   });
   if (!error) return;
+  if (/email rate limit|over_email_send_rate_limit/i.test(error.message + (error.code ?? ''))) throw new Error(MESSAGE_LIMITE_EMAILS);
   if (/rate|seconds|too many/i.test(error.message)) throw new Error('Patientez une minute avant de redemander un lien.');
   if (/Failed to fetch|NetworkError|network/i.test(error.message)) throw new Error(messageErreur(error));
   // Adresse inconnue (ou autre refus) : même réponse qu'en cas de succès.
@@ -333,7 +343,27 @@ export async function envoyerLienMagique(email: string): Promise<void> {
 
 export async function changerMotDePasse(nouveau: string): Promise<void> {
   const { error } = await supabase().auth.updateUser({ password: nouveau });
-  if (error) throw new Error(messageErreur(error));
+  if (!error) { try { sessionStorage.removeItem(CLE_MDP_A_CHOISIR); } catch { /* ignore */ } return; }
+  const code = (error as { code?: string }).code ?? '';
+  const m = `${code} ${error.message}`;
+  if (/same_password|different from the old/i.test(m)) throw new Error("Le nouveau mot de passe doit être différent de l'ancien.");
+  if (/weak_password|password should|at least|characters/i.test(m)) throw new Error('Mot de passe trop faible : au moins 12 caractères, avec une majuscule, une minuscule et un chiffre.');
+  if (/reauthentication|nonce/i.test(m)) throw new Error('Par sécurité, reconnectez-vous avec « Mot de passe oublié ? », puis choisissez le mot de passe tout de suite.');
+  if (/aal2|insufficient_aal|mfa/i.test(m)) throw new Error('Saisissez d’abord votre code à 6 chiffres (double authentification), puis réessayez.');
+  if (/session|jwt|expired|not.?found|missing/i.test(m)) throw new Error('Votre session a expiré : reconnectez-vous avec « Mot de passe oublié ? », puis réessayez.');
+  throw new Error(messageErreur(error));
+}
+
+/**
+ * « Mot de passe oublié » : envoie un lien qui connecte la personne et ouvre la fenêtre de nouveau mot de passe.
+ * Réponse identique que l'adresse soit connue ou non.
+ */
+export async function reinitialiserMotDePasse(email: string): Promise<void> {
+  const { error } = await supabase().auth.resetPasswordForEmail(email.trim(), { redirectTo: retour() });
+  if (!error) return;
+  if (/email rate limit|over_email_send_rate_limit/i.test(error.message + ((error as { code?: string }).code ?? ''))) throw new Error(MESSAGE_LIMITE_EMAILS);
+  if (/rate|seconds|too many/i.test(error.message)) throw new Error('Patientez une minute avant de redemander un lien.');
+  if (/Failed to fetch|NetworkError|network/i.test(error.message)) throw new Error(messageErreur(error));
 }
 
 export async function deconnecter(): Promise<void> {

@@ -18,7 +18,7 @@ import {
   TitreCinetique,
 } from '../../components/Motion';
 import {
-  commencerEnrolementMfa, confirmerEnrolementMfa, connexionMotDePasse, deconnexion, envoyerLienMagique, reporterMfa,
+  commencerEnrolementMfa, confirmerEnrolementMfa, connexionMotDePasse, deconnexion, envoyerLienMagique, reinitialiserMotDePasse, reporterMfa,
   useChargement, useEtatMfa, verifierCodeMfa,
 } from '../store';
 
@@ -125,6 +125,8 @@ export default function EcranConnexion({ client = false }: { client?: boolean })
   };
   const avecMotDePasse = (e: FormEvent) => { e.preventDefault(); void executer(() => connexionMotDePasse(email, mdp)); };
   const parLien = (e?: FormEvent) => { e?.preventDefault(); void executer(() => envoyerLienMagique(email), t.envoye); };
+  const oubli = () => void executer(() => reinitialiserMotDePasse(email),
+    "Si cette adresse est connue de l'agence, un e-mail « Reset Your Password » vient d'être envoyé. Cliquez sur son lien : vous serez connecté et pourrez choisir un nouveau mot de passe.");
 
   if (chargement) {
     return (
@@ -199,6 +201,11 @@ export default function EcranConnexion({ client = false }: { client?: boolean })
               <button type={client ? 'submit' : 'button'} className={client ? 'btn-primaire' : ''} style={{ justifyContent: 'center' }} disabled={occupe} onClick={client ? undefined : () => parLien()}>
                 <Icone nom="courriel" taille={16} /> {t.lien}
               </button>
+              {!client && (
+                <button type="button" className="btn-petit" style={{ justifyContent: 'center', border: 0, background: 'transparent', textDecoration: 'underline' }} disabled={occupe} onClick={oubli}>
+                  Mot de passe oublié ?
+                </button>
+              )}
             </div>
           </form>
         </section>
