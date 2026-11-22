@@ -40,14 +40,13 @@ body{width:1080px;height:1920px;overflow:hidden;background:#0c0a09;color:#fbf4ea
 <div class="a cap" id="c2" style="top:1560px;font-size:70px">3 commandes perdues <span class="hot">cette semaine</span></div>
 <div class="a cap" id="c3" style="top:200px;font-size:88px">Une commande oubliée<br>= un client <span class="hot">perdu</span></div>
 <div class="a dash" id="dash">
- <div style="font-size:30px;color:#8f8a85;font-weight:700;letter-spacing:.14em">AUJOURD'HUI · 3 NOUVEAUTÉS</div>
- <div class="row" id="r1"><div><div class="n">#1043 · Kamis 42</div><div class="s">Béjaïa · livraison demain</div></div><div class="ok">confirmée</div></div>
- <div class="row" id="r2"><div><div class="n">Lyes · rendez-vous 16h</div><div class="s">rappel envoyé la veille</div></div><div class="ok">réservé</div></div>
- <div class="row" id="r3"><div><div class="n">Stock Kamis 42</div><div class="s">seuil d'alerte : 5 pièces</div></div><div class="ok">à jour</div></div>
- <div class="big" id="bigv">0</div>
- <div style="font-size:34px;color:#c9ced6;font-weight:600">commandes enregistrées cette semaine, sans cahier</div>
+ <div style="font-size:30px;color:#8f8a85;font-weight:700;letter-spacing:.14em">CE QUE SAYPH FAIT POUR VOUS</div>
+ <div class="row" id="r1" style="margin-top:30px"><div><div class="n" style="font-family:Cairo,Man;font-size:44px">الكليان يجاوبو</div><div class="s">Agents IA · WhatsApp, Instagram, commandes et rendez-vous</div></div><div class="ok">01</div></div>
+ <div class="row" id="r2"><div><div class="n" style="font-family:Cairo,Man;font-size:44px">برنامج على المقاس</div><div class="s">Logiciels sur mesure · stock, factures, suivi</div></div><div class="ok">02</div></div>
+ <div class="row" id="r3"><div><div class="n" style="font-family:Cairo,Man;font-size:44px">موقع شباب وسريع</div><div class="s">Sites web · qui présentent et qui vendent</div></div><div class="ok">03</div></div>
+ <div style="font-size:34px;color:#c9ced6;font-weight:600;margin-top:40px">Une seule équipe, de la première réponse au site qui vend.</div>
 </div>
-<div class="a q" id="q">Arrêtez de chercher<br>dans le <span class="hot">cahier</span>.</div>
+<div class="a q" id="q">Un cahier ? Non.<br><span class="hot">Un système</span> qui travaille.</div>
 <div class="a sig" id="sig">SAYPH</div>
 <div class="a tag" id="tag">@sayph.studio · Agents IA, logiciels, sites web</div>
 <script>
@@ -64,8 +63,8 @@ window.render=function(t){
  fade(E('c2'),t,6.6,9.6,.4);
  fade(E('c3'),t,9.8,13.4,.4);
  var dash=E('dash'); fade(dash,t,13.6,20.6,.4);
- pop(E('r1'),t,14.2); pop(E('r2'),t,15.0); pop(E('r3'),t,15.8);
- var n=t<16?0:Math.min(3,Math.floor((t-16)/1.3)+1); E('bigv').textContent=n;
+ pop(E('r1'),t,14.2); pop(E('r2'),t,15.4); pop(E('r3'),t,16.6);
+ 
  fade(E('q'),t,20.8,25); fade(E('sig'),t,21.4,25); fade(E('tag'),t,22,25);
 };
 render(0);
