@@ -1,0 +1,67 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Cairo;src:url(file:///tmp/claude-0/-home-user-AGENT-d-marche-etude/6f005ab9-7dad-5f9f-8ac6-19b1b23d379e/scratchpad/node_modules/@fontsource/cairo/files/cairo-arabic-600-normal.woff2);font-weight:600}
+@font-face{font-family:Cairo;src:url(file:///tmp/claude-0/-home-user-AGENT-d-marche-etude/6f005ab9-7dad-5f9f-8ac6-19b1b23d379e/scratchpad/node_modules/@fontsource/cairo/files/cairo-arabic-800-normal.woff2);font-weight:800}
+@font-face{font-family:Man;src:url(file:///tmp/claude-0/-home-user-AGENT-d-marche-etude/6f005ab9-7dad-5f9f-8ac6-19b1b23d379e/scratchpad/node_modules/@fontsource/manrope/files/manrope-latin-500-normal.woff2);font-weight:500}
+@font-face{font-family:Man;src:url(file:///tmp/claude-0/-home-user-AGENT-d-marche-etude/6f005ab9-7dad-5f9f-8ac6-19b1b23d379e/scratchpad/node_modules/@fontsource/manrope/files/manrope-latin-700-normal.woff2);font-weight:700}
+@font-face{font-family:Syne;src:url(file:///tmp/claude-0/-home-user-AGENT-d-marche-etude/6f005ab9-7dad-5f9f-8ac6-19b1b23d379e/scratchpad/node_modules/@fontsource/syne/files/syne-latin-700-normal.woff2)}
+*{box-sizing:border-box;margin:0}
+body{width:1080px;height:1920px;overflow:hidden;background:#0c0a09;color:#fbf4ea;font-family:Man;position:relative}
+#glow{position:absolute;inset:0;background:radial-gradient(1000px 900px at 50% 118%,rgba(255,77,31,.42),rgba(255,77,31,.08) 55%,transparent 75%)}
+.a{position:absolute;opacity:0}
+.cap{left:90px;right:90px;top:170px;font-family:Cairo,Man;font-weight:800;font-size:76px;line-height:1.2;text-align:center}
+.hot{color:#ff8a1f}
+.phone{left:150px;top:400px;width:780px;height:1260px;border-radius:72px;background:#15110f;border:3px solid #2a221d;padding:70px 46px;overflow:hidden}
+.top{font-size:30px;color:#8f8a85;display:flex;justify-content:space-between;margin-bottom:40px;font-weight:700}
+.bub{max-width:560px;padding:24px 30px;border-radius:30px;font-size:44px;font-family:Cairo,Man;font-weight:600;line-height:1.4;margin:0 0 22px;direction:rtl;text-align:right;position:relative}
+.g{background:#2a221d;color:#c9ced6}
+.o{background:linear-gradient(135deg,#ff4d1f,#ff8a1f);color:#0c0a09}
+.l{margin-left:auto}
+.r{margin-right:auto}
+.ts{font-family:Man;font-weight:700;font-size:26px;color:#8f8a85;text-align:center;margin:10px 0 30px}
+.card{left:150px;top:420px;width:780px;padding:56px;border-radius:52px;background:#1c1714;border:3px solid #2a221d}
+.num{font-family:Man;font-weight:700;font-size:150px;color:#ffd166;letter-spacing:-.02em}
+.pill{left:250px;top:1220px;padding:30px 44px;border-radius:999px;background:linear-gradient(90deg,#ff4d1f,#ff8a1f);color:#0c0a09;font-weight:700;font-size:44px}
+.q{left:90px;right:90px;top:720px;text-align:center;font-family:Cairo,Man;font-weight:800;font-size:112px;line-height:1.25}
+.sig{left:0;right:0;bottom:150px;text-align:center;font-family:Syne;font-size:70px;letter-spacing:.14em}
+.tag{left:0;right:0;bottom:90px;text-align:center;font-size:36px;color:#ffb08a;font-weight:700}
+</style></head><body><div id="glow"></div>
+<div class="a cap" id="t1">POV : tu écris à 23h</div>
+<div class="a cap" id="t2">Tu attends…</div>
+<div class="a cap" id="t3">Sayph a <span class="hot">répondu</span></div>
+<div class="a cap" id="t4">Pendant que tu dors.</div>
+<div class="a phone" id="ph"><div class="top"><span id="clk">23:04</span><span>WhatsApp</span></div>
+ <div class="ts">Aujourd'hui</div>
+ <div class="a bub g l" id="m1">السلام، dispo؟</div>
+ <div class="a bub g l" id="m2">راكم حيين؟</div>
+ <div class="a bub g l" id="m3">بغيت نكوموندي…</div>
+ <div class="a bub o r" id="rep">مرحبا بيك! 4 500 دج، نبعثهالك غدوة ✓</div>
+</div>
+<div class="a card" id="card"><div style="font-size:34px;color:#8f8a85;font-weight:700;letter-spacing:.14em">COMMANDE #1042</div>
+ <div style="font-family:Man;font-weight:700;font-size:56px;margin-top:20px">Kamis · taille 42</div>
+ <div style="font-size:34px;color:#c9ced6;margin-top:10px">Béjaïa · livraison demain avant 14h</div>
+ <div class="num" id="amt" style="margin-top:50px">0 DA</div>
+ <div style="font-size:34px;color:#ff8a1f;font-weight:700;margin-top:20px">✓ confirmée et notée</div></div>
+<div class="a pill" id="pill">Vente confirmée · 23:07</div>
+<div class="a q" id="q">Quel message tu reçois le plus ?</div>
+<div class="a sig" id="sig">SAYPH</div>
+<div class="a tag" id="tag">@sayph.studio · Agents IA, logiciels, sites web</div>
+<script>
+window.DUR=22;
+var E=function(id){return document.getElementById(id)};
+var fade=function(el,t,a,b,d){d=d||.35;var o=t<a?0:t>=b?0:Math.min(1,(t-a)/d,(b-t)/d);el.style.opacity=Math.max(0,o)};
+var pop=function(el,t,a,d){d=d||.3;var k=Math.min(1,Math.max(0,(t-a)/d));el.style.opacity=k;el.style.transform='translateY('+(30*(1-k))+'px)'};
+window.render=function(t){
+ fade(E('t1'),t,0,2.2); fade(E('t2'),t,2.4,6.2); fade(E('t3'),t,6.4,10.2); fade(E('t4'),t,10.4,15.6);
+ var ph=E('ph'); ph.style.opacity = t<10.4 ? Math.min(1,t/.4) : 0;
+ pop(E('m1'),t,.5); pop(E('m2'),t,2.2); pop(E('m3'),t,3.8);
+ E('m1').className = 'a bub l ' + (t>=6 ? 'o' : 'g');
+ E('m1').style.opacity = t>=.5 ? 1 : 0;
+ pop(E('rep'),t,7.0,.35);
+ E('clk').textContent = t<6 ? '23:0' + (4+Math.floor(t/2)) : '23:07';
+ var card=E('card'); fade(card,t,10.4,15.8,.4);
+ if(t>=10.4){var k=Math.min(1,Math.max(0,(t-11)/2.2)); E('amt').textContent=Math.round(4500*k).toLocaleString('fr-FR')+' DA';}
+ fade(E('pill'),t,12.2,15.8,.4);
+ fade(E('q'),t,16,22); fade(E('sig'),t,16.8,22); fade(E('tag'),t,17.4,22);
+};
+render(0);
+</script></body></html>
